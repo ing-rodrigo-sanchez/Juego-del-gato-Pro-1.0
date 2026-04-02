@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego del Gato</title>
+    <link rel="stylesheet" href="style.css">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7065205760514282"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div id="layout-wrapper">
+        <aside id="sidebar-left">
+            <div class="ad-slot-vertical"></div>
+        </aside>
+
+        <div id="main-game-column">
+            <p class="project-credit">
+                Proyecto desarrollado por Rodrigo Sánchez, estudiante de Ingeniería Civil
+                en Informática de la Universidad Diego Portales. Experimento de desarrollo web.</p>
+            <main class="game-container">
+                <div id="start-screen">
+                    <h1>Juego del Gato Pro</h1>
+                    <section id="auth-section">
+                        <input id="auth-name" type="text" placeholder="Nombre">
+                        <input id="auth-pin" type="password" placeholder="PIN">
+                        <button id="auth-submit-btn" type="button">Iniciar Sesion / Registrarse</button>
+                        <button id="guest-btn" type="button">Continuar como Invitado</button>
+                        <p id="auth-message" class="helper-text"></p>
+                        <div class="ad-slot"></div>
+                    </section>
+
+                    <section id="selection-section" style="display: none;">
+                        <button id="logout-btn" class="link-btn" type="button">Cerrar Sesion</button>
+                        <p id="welcome-message" class="welcome-text">Hola, Invitado</p>
+                        <select id="difficulty-selector">
+                            <option value="principiante">Principiante</option>
+                            <option value="intermedio">Intermedio</option>
+                            <option value="avanzado">Avanzado</option>
+                            <option value="imposible">Imposible</option>
+                        </select>
+                        <button id="start-game-btn" type="button">!Empezar Juego!</button>
+                        <div class="ad-slot"></div>
+                    </section>
+                </div>
+
+                <div id="game-lobby" style="display: none;">
+                    <section id="profile-panel" aria-label="Perfil del jugador">
+                        <h2>Perfil</h2>
+                        <p id="profile-name">Jugador: Invitado</p>
+                        <p id="profile-wins">Victorias: 0</p>
+                        <p id="profile-losses">Derrotas: 0</p>
+                        <p id="profile-draws">Empates: 0</p>
+                    </section>
+
+                    <section class="board" aria-label="Tablero de juego del gato">
+                        <div class="cell" data-index="0"></div>
+                        <div class="cell" data-index="1"></div>
+                        <div class="cell" data-index="2"></div>
+                        <div class="cell" data-index="3"></div>
+                        <div class="cell" data-index="4"></div>
+                        <div class="cell" data-index="5"></div>
+                        <div class="cell" data-index="6"></div>
+                        <div class="cell" data-index="7"></div>
+                        <div class="cell" data-index="8"></div>
+                    </section>
+
+                    <p class="status" id="status">Turno de X</p>
+                    <div id="timer"></div>
+                    <button id="reset-btn" type="button">Reiniciar</button>
+                </div>
+            </main>
+        </div>
+
+        <aside id="sidebar-right">
+            <div class="ad-slot-vertical"></div>
+        </aside>
+    </div>
+
+    <a href="privacidad.html" class="privacy-link">Política de Privacidad</a>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
