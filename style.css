@@ -50,9 +50,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start !important;
     width: 100%;
     height: 100vh;
+    padding-top: 2rem;
     overflow: hidden;
 }
 
@@ -61,7 +62,7 @@ body {
     text-align: center;
     color: #ccc;
     font-size: 0.8rem;
-    margin: 0 0 30px 0;
+    margin: 0 0 12px 0;
     padding: 0 1rem;
 }
 
@@ -102,13 +103,13 @@ body {
 }
 
 .game-container {
-    width: min(90vw, 420px);
+    width: min(90vw, 380px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
-    padding: 0.7rem;
+    gap: 0.4rem;
+    padding: 0.6rem;
     background-color: rgba(17, 24, 39, 0.7);
     border: 1px solid #334155;
     border-radius: 16px;
@@ -123,8 +124,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
+    justify-content: flex-start;
+    gap: 0.5rem;
 }
 
 #start-screen h1 {
@@ -139,27 +140,27 @@ body {
 #auth-name,
 #auth-pin {
     width: 100%;
-    max-width: 360px;
-    padding: 0.8rem 0.95rem;
+    max-width: 320px;
+    padding: 0.65rem 0.8rem;
     border-radius: 10px;
     border: 1px solid #334155;
     background-color: #0f172a;
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 0.9rem;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 #difficulty-selector {
     width: 100%;
-    max-width: 360px;
-    min-height: 48px;
-    padding: 0.8rem 2.4rem 0.8rem 0.95rem;
+    max-width: 320px;
+    min-height: 40px;
+    padding: 0.65rem 2.2rem 0.65rem 0.8rem;
     border-radius: 10px;
     border: 1px solid #334155;
     background-color: #0f172a;
     color: var(--text-primary);
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     outline: none;
     cursor: pointer;
@@ -191,29 +192,29 @@ body {
 
 #auth-section {
     width: 100%;
-    max-width: 380px;
-    min-height: 430px;
+    max-width: 340px;
+    min-height: auto;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: center;
     align-items: center;
     justify-items: center;
-    gap: 0.8rem;
+    gap: 0.5rem;
     position: relative;
-    margin: 0 auto;
+    margin: 0 auto !important;
 }
 
 #selection-section {
     width: 100%;
-    max-width: 380px;
-    min-height: 430px;
+    max-width: 340px;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.8rem;
+    gap: 0.5rem;
     position: relative;
-    margin: 0 auto;
+    margin: 0 auto !important;
     text-align: center;
 }
 
@@ -299,8 +300,8 @@ body {
 #start-game-btn {
     border: none;
     border-radius: 10px;
-    padding: 0.85rem 1.4rem;
-    font-size: 1.05rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #f8fafc;
     background-color: var(--accent);
