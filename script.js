@@ -5,12 +5,19 @@ const startScreen = document.getElementById('start-screen');
 const authSection = document.getElementById('auth-section');
 const selectionSection = document.getElementById('selection-section');
 const gameLobby = document.getElementById('game-lobby');
+const seccionInformativaFinal = document.getElementById('seccion-informativa-final');
+const welcomeContext = document.getElementById('welcome-context');
 
 const authNameInput = document.getElementById('auth-name');
 const authPinInput = document.getElementById('auth-pin');
 const authMessage = document.getElementById('auth-message');
 const authSubmitButton = document.getElementById('auth-submit-btn');
 const guestButton = document.getElementById('guest-btn');
+const pvpButton = document.getElementById('btn-pvp');
+const pvpConfig = document.getElementById('config-pvp');
+const pvpPlayerOneInput = document.getElementById('pvp-player1');
+const pvpPlayerTwoInput = document.getElementById('pvp-player2');
+const pvpStartButton = document.getElementById('pvp-start-btn');
 const logoutButton = document.getElementById('logout-btn');
 
 const difficultySelector = document.getElementById('difficulty-selector');
@@ -22,6 +29,7 @@ const profileName = document.getElementById('profile-name');
 const profileWins = document.getElementById('profile-wins');
 const profileLosses = document.getElementById('profile-losses');
 const profileDraws = document.getElementById('profile-draws');
+const profilePvpScore = document.getElementById('profile-pvp-score');
 
 const winningCombinations = [
     [0, 1, 2],
@@ -44,13 +52,23 @@ const AI_MOVE_DELAY_MS = 500;
 let boardState = ['', '', '', '', '', '', '', '', ''];
 let currentPlayer = PLAYER_SYMBOL;
 let isGameActive = false;
+let isBoardClickable = false;
 let secondsLeft = TURN_TIME_SECONDS;
 let timerIntervalId = null;
 let aiTimeoutId = null;
 
 let gameMode = 'ai';
+let isPvP = false;
 let isGuestSession = true;
 let currentAccountName = 'Invitado';
+let currentStartSection = 'auth';
+let pvpPlayerOneName = 'Jugador 1';
+let pvpPlayerTwoName = 'Jugador 2';
+let pvpStats = {
+    playerOneWins: 0,
+    playerTwoWins: 0,
+    draws: 0
+};
 
 const timerContainer = document.createElement('div');
 timerContainer.className = 'timer-container';
@@ -222,6 +240,22 @@ function updateAccountStats(result) {
 }
 
 function renderProfile() {
+    if (isPvP) {
+        profileName.style.display = 'none';
+        profileWins.style.display = 'none';
+        profileLosses.style.display = 'none';
+        profileDraws.style.display = 'none';
+        profilePvpScore.style.display = 'block';
+        profilePvpScore.textContent = `${pvpPlayerOneName}: ${pvpStats.playerOneWins} Victorias | Empates: ${pvpStats.draws} | ${pvpPlayerTwoName}: ${pvpStats.playerTwoWins} Victorias.`;
+        return;
+    }
+
+    profileName.style.display = 'block';
+    profileWins.style.display = 'block';
+    profileLosses.style.display = 'block';
+    profileDraws.style.display = 'block';
+    profilePvpScore.style.display = 'none';
+
     if (isGuestSession) {
         const guestStats = loadGuestStats();
         profileName.textContent = 'Jugador: Invitado';
@@ -252,14 +286,74 @@ function setAuthMessage(message) {
     authMessage.textContent = message;
 }
 
+function setBoardInteractivity(isEnabled) {
+    isBoardClickable = isEnabled;
+    cells.forEach((cell) => {
+        cell.style.pointerEvents = isEnabled ? 'auto' : 'none';
+        cell.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
+    });
+}
+
+function showDefaultAuthActions() {
+    authSection.style.display = 'grid';
+    authNameInput.style.display = 'block';
+    authPinInput.style.display = 'block';
+    authSubmitButton.style.display = 'block';
+    guestButton.style.display = 'block';
+    pvpButton.style.display = 'block';
+    pvpConfig.style.display = 'none';
+}
+
+function showPvpSetup() {
+    authNameInput.style.display = 'none';
+    authPinInput.style.display = 'none';
+    authSubmitButton.style.display = 'none';
+    guestButton.style.display = 'none';
+    pvpButton.style.display = 'none';
+    pvpConfig.style.display = 'grid';
+    setBoardInteractivity(false);
+}
+
+function resetPvpState() {
+    pvpPlayerOneName = 'Jugador 1';
+    pvpPlayerTwoName = 'Jugador 2';
+    pvpStats = {
+        playerOneWins: 0,
+        playerTwoWins: 0,
+        draws: 0
+    };
+    pvpPlayerOneInput.value = '';
+    pvpPlayerTwoInput.value = '';
+}
+
+function syncWelcomeContextVisibility() {
+    if (!welcomeContext && !seccionInformativaFinal) {
+        return;
+    }
+
+    const isStartVisible = startScreen.style.display !== 'none';
+    const shouldShowContext = isStartVisible && currentStartSection === 'auth';
+
+    if (welcomeContext) {
+        welcomeContext.style.display = shouldShowContext ? 'block' : 'none';
+    }
+
+    if (seccionInformativaFinal) {
+        seccionInformativaFinal.style.display = shouldShowContext ? 'block' : 'none';
+    }
+}
+
 function showStartSection(sectionName) {
+    currentStartSection = sectionName;
     authSection.style.display = sectionName === 'auth' ? 'grid' : 'none';
     selectionSection.style.display = sectionName === 'selection' ? 'grid' : 'none';
+    syncWelcomeContextVisibility();
 }
 
 function showScreen(target) {
     startScreen.style.display = target === 'start' ? 'grid' : 'none';
     gameLobby.style.display = target === 'game' ? 'flex' : 'none';
+    syncWelcomeContextVisibility();
 }
 
 function clearScheduledActions() {
@@ -447,6 +541,10 @@ function shouldUseStrategy(probability) {
 }
 
 function chooseAiMoveIndex() {
+    if (isPvP) {
+        return null;
+    }
+
     const difficulty = difficultySelector?.value || 'principiante';
     const randomMove = getRandomEmptyIndex();
 
@@ -482,6 +580,12 @@ function chooseAiMoveIndex() {
 }
 
 function getStatusMessage() {
+    if (isPvP) {
+        return currentPlayer === PLAYER_SYMBOL
+            ? `Turno de ${pvpPlayerOneName}`
+            : `Turno de ${pvpPlayerTwoName}`;
+    }
+
     if (currentPlayer === AI_SYMBOL) {
         return gameMode === 'ai' ? 'Turno de la IA' : 'Turno de Jugador 2';
     }
@@ -511,7 +615,11 @@ function checkDraw() {
 
 function getWinnerLabel(symbol) {
     if (symbol === PLAYER_SYMBOL) {
-        return currentAccountName;
+        return isPvP ? pvpPlayerOneName : currentAccountName;
+    }
+
+    if (isPvP) {
+        return pvpPlayerTwoName;
     }
 
     if (gameMode === 'ai') {
@@ -548,7 +656,7 @@ function startTurnTimer() {
             timerIntervalId = null;
 
             const timedMoveIndex =
-                gameMode === 'ai' && currentPlayer === AI_SYMBOL
+                !isPvP && gameMode === 'ai' && currentPlayer === AI_SYMBOL
                     ? chooseAiMoveIndex()
                     : getRandomEmptyIndex();
 
@@ -560,7 +668,7 @@ function startTurnTimer() {
 }
 
 function scheduleAiMoveIfNeeded() {
-    if (!isGameActive || gameMode !== 'ai' || currentPlayer !== AI_SYMBOL) {
+    if (isPvP || !isGameActive || gameMode !== 'ai' || currentPlayer !== AI_SYMBOL) {
         return;
     }
 
@@ -593,9 +701,27 @@ function finalizeMatch(winnerSymbol) {
     if (winnerSymbol === null) {
         updateStatus('Empate!');
         showGameResult('draw', '¡Empate técnico!');
-        updateAccountStats('draw');
+        if (isPvP) {
+            pvpStats.draws += 1;
+            renderProfile();
+        } else {
+            updateAccountStats('draw');
+        }
     } else {
         updateStatus(`${getWinnerLabel(winnerSymbol)} ha ganado!`);
+
+        if (isPvP) {
+            if (winnerSymbol === PLAYER_SYMBOL) {
+                pvpStats.playerOneWins += 1;
+            } else {
+                pvpStats.playerTwoWins += 1;
+            }
+            showGameResult('victory', `${getWinnerLabel(winnerSymbol)} gana el duelo`);
+            renderProfile();
+            isGameActive = false;
+            clearScheduledActions();
+            return;
+        }
 
         if (winnerSymbol === PLAYER_SYMBOL) {
             showGameResult('victory', '¡Has ganado!');
@@ -638,7 +764,7 @@ function handleCellClick(event) {
     const index = Number(event.target.dataset.index);
 
     const isHumanTurn = gameMode === 'ai' ? currentPlayer === PLAYER_SYMBOL : true;
-    if (!isGameActive || !isHumanTurn || boardState[index] !== '') {
+    if (!isBoardClickable || !isGameActive || !isHumanTurn || boardState[index] !== '') {
         return;
     }
 
@@ -658,29 +784,48 @@ function resetBoardState() {
 
 function resetGame() {
     resetBoardState();
-    updateStatus(`Turno de ${currentAccountName}`);
+    setBoardInteractivity(true);
+    updateStatus(getStatusMessage());
     startTurnTimer();
     scheduleAiMoveIfNeeded();
 }
 
 function startMatch(selectedMode) {
     gameMode = selectedMode;
+    isPvP = selectedMode === 'pvp';
 
+    setBoardInteractivity(false);
     showScreen('game');
     renderProfile();
     resetBoardState();
-    updateStatus(`Turno de ${currentAccountName}`);
+    setBoardInteractivity(true);
+    updateStatus(getStatusMessage());
     startTurnTimer();
     scheduleAiMoveIfNeeded();
 }
 
 function backToStart() {
+    const wasPvP = isPvP;
+
     clearScheduledActions();
     resetBoardState();
+    isGameActive = false;
+    setBoardInteractivity(false);
     secondsLeft = TURN_TIME_SECONDS;
     updateTimerUI();
     updateStatus('Configura el modo y dificultad');
     showScreen('start');
+
+    if (wasPvP) {
+        isPvP = false;
+        resetPvpState();
+        showDefaultAuthActions();
+        showStartSection('auth');
+        setAuthMessage('');
+        renderProfile();
+        return;
+    }
+
     showStartSection('selection');
 }
 
@@ -690,6 +835,7 @@ function logoutSession() {
     boardState = ['', '', '', '', '', '', '', '', ''];
     currentPlayer = PLAYER_SYMBOL;
     isGameActive = false;
+    setBoardInteractivity(false);
     secondsLeft = TURN_TIME_SECONDS;
 
     cells.forEach((cell) => {
@@ -697,8 +843,11 @@ function logoutSession() {
     });
 
     gameMode = 'ai';
+    isPvP = false;
     currentAccountName = 'Invitado';
     isGuestSession = true;
+    resetPvpState();
+    showDefaultAuthActions();
 
     authNameInput.value = '';
     authPinInput.value = '';
@@ -713,8 +862,10 @@ function logoutSession() {
 }
 
 function completeAuthAsUser(name, guestMode) {
+    isPvP = false;
     currentAccountName = name;
     isGuestSession = guestMode;
+    showDefaultAuthActions();
     renderProfile();
     setAuthMessage('');
     welcomeMessage.textContent = `Hola, ${currentAccountName}`;
@@ -756,6 +907,35 @@ guestButton.addEventListener('click', () => {
     completeAuthAsUser('Invitado', true);
 });
 
+pvpButton.addEventListener('click', () => {
+    setAuthMessage('');
+    showPvpSetup();
+});
+
+pvpStartButton.addEventListener('click', () => {
+    const playerOne = pvpPlayerOneInput.value.trim();
+    const playerTwo = pvpPlayerTwoInput.value.trim();
+
+    if (!playerOne || !playerTwo) {
+        setAuthMessage('Escribe los dos nombres del duelo.');
+        return;
+    }
+
+    pvpPlayerOneName = playerOne;
+    pvpPlayerTwoName = playerTwo;
+    pvpStats = {
+        playerOneWins: 0,
+        playerTwoWins: 0,
+        draws: 0
+    };
+
+    currentAccountName = pvpPlayerOneName;
+    isGuestSession = true;
+    setAuthMessage('');
+    authSection.style.display = 'none';
+    startMatch('pvp');
+});
+
 cells.forEach((cell) => {
     cell.addEventListener('click', handleCellClick);
 });
@@ -767,6 +947,8 @@ logoutButton.addEventListener('click', logoutSession);
 
 updateStatus('Inicia sesion o continua como invitado');
 updateTimerUI();
+setBoardInteractivity(false);
+showDefaultAuthActions();
 renderProfile();
 showScreen('start');
 showStartSection('auth');
