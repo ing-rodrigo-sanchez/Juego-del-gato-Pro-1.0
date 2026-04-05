@@ -1,3 +1,5 @@
+console.log('Versión 1.3 cargada correctamente');
+
 const cells = document.querySelectorAll('.cell');
 const statusElement = document.getElementById('status');
 const resetButton = document.getElementById('reset-btn');
