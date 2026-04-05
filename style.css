@@ -122,6 +122,23 @@ body {
     opacity: 0.9;
 }
 
+.story-floating-link {
+    position: fixed;
+    top: 20px;
+    left: 25px;
+    z-index: 9999;
+    font-size: 0.65rem;
+    color: #555;
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    display: none;
+}
+
+.story-floating-link:hover {
+    opacity: 0.9;
+}
+
 .ad-slot-vertical {
     width: 300px;
     height: 600px;
@@ -176,6 +193,31 @@ body {
     text-align: center;
     color: var(--accent);
     text-shadow: 0 8px 24px rgba(37, 99, 235, 0.28);
+}
+
+.story-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 320px;
+    padding: 0.62rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #0e7490;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ecfeff;
+    background: linear-gradient(135deg, #0f766e, #0369a1);
+    box-shadow: 0 8px 18px rgba(3, 105, 161, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.story-link-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(3, 105, 161, 0.34);
+    filter: brightness(1.05);
 }
 
 #seccion-informativa-final {
