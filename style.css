@@ -556,6 +556,30 @@ body {
     width: 100%;
 }
 
+#pvp-back-btn {
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    box-shadow: none;
+}
+
+#pvp-back-btn:hover {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+#pvp-back-btn:active {
+    transform: translateY(0);
+}
+
 #profile-pvp-score {
     color: #dbeafe;
     font-size: 0.88rem;
