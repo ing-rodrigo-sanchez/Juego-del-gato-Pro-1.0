@@ -48,6 +48,12 @@
                         <input id="auth-pin" type="password" placeholder="PIN">
                         <button id="auth-submit-btn" type="button">Iniciar Sesion / Registrarse</button>
                         <button id="guest-btn" type="button">Continuar como Invitado</button>
+                        <button id="btn-pvp" type="button">Duelo 1 vs 1</button>
+                        <div id="config-pvp" style="display: none;" aria-label="Configuracion de duelo local">
+                            <input id="pvp-player1" type="text" placeholder="Nombre Jugador 1">
+                            <input id="pvp-player2" type="text" placeholder="Nombre Jugador 2">
+                            <button id="pvp-start-btn" type="button">!Comenzar Duelo!</button>
+                        </div>
                         <p id="auth-message" class="helper-text"></p>
                     </section>
 
@@ -71,6 +77,7 @@
                         <p id="profile-wins">Victorias: 0</p>
                         <p id="profile-losses">Derrotas: 0</p>
                         <p id="profile-draws">Empates: 0</p>
+                        <p id="profile-pvp-score" class="hidden"></p>
                     </section>
 
                     <section class="board" aria-label="Tablero de juego del gato">
