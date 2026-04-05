@@ -27,6 +27,7 @@ const difficultySelector = document.getElementById('difficulty-selector');
 const startGameButton = document.getElementById('start-game-btn');
 const welcomeMessage = document.getElementById('welcome-message');
 const timerRoot = document.getElementById('timer');
+const floatingStoryLink = document.getElementById('floating-story-link');
 
 const profileName = document.getElementById('profile-name');
 const profileWins = document.getElementById('profile-wins');
@@ -367,6 +368,11 @@ function showStartSection(sectionName) {
 function showScreen(target) {
     startScreen.style.display = target === 'start' ? 'grid' : 'none';
     gameLobby.style.display = target === 'game' ? 'flex' : 'none';
+
+    if (floatingStoryLink) {
+        floatingStoryLink.style.display = target === 'game' ? 'block' : 'none';
+    }
+
     syncWelcomeContextVisibility();
 }
 
