@@ -18,6 +18,7 @@ const pvpConfig = document.getElementById('config-pvp');
 const pvpPlayerOneInput = document.getElementById('pvp-player1');
 const pvpPlayerTwoInput = document.getElementById('pvp-player2');
 const pvpStartButton = document.getElementById('pvp-start-btn');
+const pvpBackButton = document.getElementById('pvp-back-btn');
 const logoutButton = document.getElementById('logout-btn');
 
 const difficultySelector = document.getElementById('difficulty-selector');
@@ -314,6 +315,18 @@ function showPvpSetup() {
     setBoardInteractivity(false);
 }
 
+function clearPvpNameInputs() {
+    pvpPlayerOneInput.value = '';
+    pvpPlayerTwoInput.value = '';
+}
+
+function backFromPvpSetupToAuth() {
+    pvpConfig.style.display = 'none';
+    showDefaultAuthActions();
+    clearPvpNameInputs();
+    setAuthMessage('');
+}
+
 function resetPvpState() {
     pvpPlayerOneName = 'Jugador 1';
     pvpPlayerTwoName = 'Jugador 2';
@@ -322,8 +335,7 @@ function resetPvpState() {
         playerTwoWins: 0,
         draws: 0
     };
-    pvpPlayerOneInput.value = '';
-    pvpPlayerTwoInput.value = '';
+    clearPvpNameInputs();
 }
 
 function syncWelcomeContextVisibility() {
@@ -910,6 +922,10 @@ guestButton.addEventListener('click', () => {
 pvpButton.addEventListener('click', () => {
     setAuthMessage('');
     showPvpSetup();
+});
+
+pvpBackButton.addEventListener('click', () => {
+    backFromPvpSetupToAuth();
 });
 
 pvpStartButton.addEventListener('click', () => {
