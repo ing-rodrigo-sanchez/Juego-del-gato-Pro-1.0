@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historia e estrategias | Juego del Gato Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-1: #06131f;
+            --bg-2: #10263a;
+            --panel: rgba(5, 20, 33, 0.86);
+            --panel-border: rgba(148, 182, 214, 0.35);
+            --title: #dff2ff;
+            --text: #d5e7f7;
+            --muted: #9ab4c9;
+            --accent: #4cb6ff;
+            --accent-2: #33d1a4;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: "Source Serif 4", Georgia, serif;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(76, 182, 255, 0.25), transparent 38%),
+                radial-gradient(circle at 90% 25%, rgba(51, 209, 164, 0.2), transparent 40%),
+                linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 70%);
+            overflow-x: hidden;
+        }
+
+        .ambient-lines {
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 28px 28px;
+            pointer-events: none;
+            mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.85), transparent 85%);
+        }
+
+        .page {
+            width: min(100%, 980px);
+            margin: 0 auto;
+            padding: 26px 16px 40px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: var(--muted);
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 182, 214, 0.35);
+            background: rgba(6, 19, 31, 0.55);
+            transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+        }
+
+        .nav-back:hover {
+            color: var(--title);
+            border-color: rgba(76, 182, 255, 0.6);
+            transform: translateY(-1px);
+        }
+
+        .hero {
+            margin-top: 18px;
+            margin-bottom: 20px;
+            padding: 8px 4px;
+        }
+
+        .eyebrow {
+            margin: 0 0 8px;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.75rem;
+            color: var(--accent-2);
+        }
+
+        h1 {
+            margin: 0;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            font-weight: 800;
+            font-size: clamp(1.8rem, 4vw, 2.9rem);
+            line-height: 1.15;
+            color: var(--title);
+            text-wrap: balance;
+        }
+
+        .subtitle {
+            max-width: 65ch;
+            margin: 14px 0 0;
+            color: var(--muted);
+            font-size: 1.03rem;
+            line-height: 1.65;
+        }
+
+        .story-card {
+            position: relative;
+            border-radius: 22px;
+            border: 1px solid var(--panel-border);
+            background: linear-gradient(180deg, rgba(9, 28, 45, 0.92), var(--panel));
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.34);
+            padding: clamp(18px, 3vw, 34px);
+            backdrop-filter: blur(4px);
+        }
+
+        .story-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(130deg, rgba(76, 182, 255, 0.55), rgba(51, 209, 164, 0.28), transparent 65%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .story-card h2,
+        .story-card h3 {
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            color: var(--title);
+            margin-top: 0;
+        }
+
+        .story-card h2 {
+            font-size: clamp(1.3rem, 2.8vw, 2rem);
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 182, 214, 0.32);
+        }
+
+        .story-card h3 {
+            font-size: clamp(1.05rem, 2vw, 1.35rem);
+            margin: 26px 0 12px;
+            color: #c8ecff;
+        }
+
+        .story-card p {
+            margin: 0 0 1.05rem;
+            font-size: clamp(1rem, 1.5vw, 1.08rem);
+            line-height: 1.8;
+            color: var(--text);
+            text-wrap: pretty;
+        }
+
+        .story-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .tag-line {
+            margin-top: 18px;
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(76, 182, 255, 0.13);
+            border: 1px solid rgba(76, 182, 255, 0.25);
+            color: #bfe7ff;
+            font-family: "Montserrat", "Segoe UI", sans-serif;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+        }
+
+        @media (max-width: 700px) {
+            .page {
+                padding-top: 20px;
+            }
+
+            .story-card {
+                border-radius: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-lines" aria-hidden="true"></div>
+
+    <main class="page">
+        <a class="nav-back" href="index.html" aria-label="Volver a la interfaz inicial">← Volver al inicio</a>
+
+        <section class="hero" aria-labelledby="titulo-principal">
+            <p class="eyebrow">Guía oficial para jugadores</p>
+            <h1 id="titulo-principal">Historia e estrategias</h1>
+            <p class="subtitle">Un recorrido por el origen, la lógica y las mejores decisiones para dominar el juego del
+                gato.</p>
+        </section>
+
+        <article class="story-card" aria-label="Contenido educativo del juego del gato">
+            <h2>Historia del juego del gato (Tres en raya)</h2>
+
+            <p>El juego del gato, conocido también como “tres en raya” o tic-tac-toe, es uno de los juegos de estrategia
+                más simples y, al mismo tiempo, más trascendentes en la historia de la humanidad. Su origen se remonta a
+                antiguas civilizaciones, donde se han encontrado evidencias de juegos similares grabados en superficies
+                de piedra. Investigaciones arqueológicas sugieren que en el Antiguo Egipto ya existían formas primitivas
+                de este juego, mientras que en el Imperio Romano se practicaban variantes que compartían su misma lógica
+                estructural.</p>
+
+            <p>A lo largo de los siglos, el juego del gato ha logrado mantenerse vigente gracias a su simplicidad y
+                accesibilidad. No requiere equipamiento especializado, tecnología avanzada ni preparación compleja, lo
+                que ha permitido su transmisión de generación en generación en distintos contextos culturales. Esta
+                característica lo ha convertido en un juego universal, presente tanto en espacios educativos como
+                recreativos.</p>
+
+            <p>Más allá de su valor como entretenimiento, el juego del gato posee una significativa importancia en el
+                desarrollo de habilidades cognitivas. Su práctica fomenta el pensamiento lógico, la planificación
+                estratégica, la anticipación de escenarios y la toma de decisiones. Estas capacidades son fundamentales
+                no solo en el ámbito académico, sino también en la vida cotidiana, lo que ha llevado a que este juego
+                sea utilizado como herramienta pedagógica en diversos niveles educativos.</p>
+
+            <p>En el ámbito de la informática, el juego del gato ha adquirido un rol relevante como modelo introductorio
+                para el estudio de algoritmos y la inteligencia artificial. Debido a su estructura limitada y a la
+                posibilidad de analizar todas las combinaciones de jugadas posibles, se ha utilizado para enseñar
+                conceptos como árboles de decisión, optimización y programación de estrategias automatizadas. En este
+                sentido, el juego trasciende su carácter lúdico y se posiciona como un recurso didáctico en disciplinas
+                científicas y tecnológicas.</p>
+
+            <p>En la actualidad, el juego del gato sigue siendo ampliamente practicado tanto en formato tradicional,
+                utilizando lápiz y papel, como en plataformas digitales, donde se integra en aplicaciones móviles,
+                videojuegos y entornos educativos interactivos. Su permanencia en el tiempo demuestra que incluso las
+                estructuras más simples pueden poseer un valor cultural, educativo y estratégico significativo.</p>
+
+            <h3>Cómo jugar, estrategias para ganar y resultados posibles</h3>
+
+            <p>El juego del gato se desarrolla en una cuadrícula compuesta por nueve casillas organizadas en tres filas
+                y tres columnas. En él participan dos jugadores, quienes utilizan símbolos distintos, tradicionalmente
+                “X” y “O”. Los jugadores se turnan de manera alternada, colocando su símbolo en una casilla vacía en
+                cada turno.</p>
+
+            <p>El objetivo principal del juego es lograr alinear tres símbolos propios de forma consecutiva, ya sea en
+                sentido horizontal, vertical o diagonal, antes que el oponente. Esta condición determina al ganador de
+                la partida.</p>
+
+            <p>Las reglas del juego son sencillas y precisas. Cada jugador puede realizar únicamente una jugada por
+                turno y no está permitido ocupar una casilla que ya haya sido utilizada previamente. El desarrollo del
+                juego continúa hasta que se cumple una de dos condiciones: uno de los jugadores consigue alinear tres
+                símbolos o todas las casillas del tablero son ocupadas.</p>
+
+            <p>A pesar de su simplicidad, el juego del gato implica un componente estratégico importante. Una de las
+                principales recomendaciones para aumentar las probabilidades de victoria es controlar la casilla central
+                del tablero en los primeros turnos, ya que esta posición permite acceder a un mayor número de
+                combinaciones posibles para formar una línea ganadora. Asimismo, las esquinas del tablero son posiciones
+                estratégicas relevantes, dado que facilitan la creación de múltiples oportunidades de alineación.</p>
+
+            <p>Otra estrategia fundamental consiste en la capacidad de anticipación. Un jugador debe ser capaz de prever
+                las posibles jugadas del oponente y bloquear aquellas que representen una amenaza directa de victoria.
+                La omisión de un bloqueo oportuno suele conducir a una derrota inmediata. Del mismo modo, una estrategia
+                avanzada consiste en generar lo que se conoce como “doble amenaza”, es decir, crear dos posibles líneas
+                de victoria simultáneamente. Esta situación obliga al oponente a elegir solo una opción para bloquear,
+                lo que permite asegurar la victoria en el turno siguiente.</p>
+
+            <p>En cuanto a los resultados posibles del juego, estos se clasifican en tres categorías: victoria, empate y
+                derrota. La victoria ocurre cuando un jugador logra alinear tres de sus símbolos en cualquiera de las
+                direcciones permitidas. La derrota, por su parte, se produce cuando el oponente alcanza dicha alineación
+                antes. Finalmente, el empate tiene lugar cuando todas las casillas han sido ocupadas y ninguno de los
+                jugadores ha conseguido cumplir la condición de victoria.</p>
+
+            <p>Es importante destacar que, cuando ambos jugadores aplican estrategias óptimas y no cometen errores, el
+                resultado del juego será siempre un empate. Esto se debe a que el juego del gato ha sido completamente
+                resuelto desde el punto de vista matemático, lo que significa que no existe una estrategia ganadora
+                garantizada si el oponente juega de manera perfecta.</p>
+
+            <h3>Conclusión</h3>
+
+            <p>El juego del gato representa un claro ejemplo de cómo una estructura simple puede albergar una
+                profundidad estratégica significativa. Su valor histórico, cultural y educativo lo posiciona como un
+                recurso relevante tanto en el ámbito recreativo como en el académico. A través de su práctica, es
+                posible desarrollar habilidades esenciales relacionadas con el pensamiento lógico y la toma de
+                decisiones, lo que explica su permanencia a lo largo del tiempo y su continua utilización en distintos
+                contextos.</p>
+
+            <span class="tag-line">Historia, estrategia y lógica en una sola cuadrícula</span>
+        </article>
+    </main>
+</body>
+
+</html>
