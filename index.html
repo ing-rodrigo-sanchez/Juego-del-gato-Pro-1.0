@@ -4,8 +4,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Explora mi Portafolio de Ingenieria: Proyectos reales, soluciones digitales y desarrollo web estrategico. Descubre resultados y contactame hoy.">
+    <meta property="og:title" content="Portafolio de Ingenieria | Rodrigo Sanchez Vargas">
+    <meta property="og:description"
+        content="Conoce mi Portafolio de Ingenieria con Proyectos reales, soluciones web y enfoque practico para crear resultados medibles.">
+    <meta property="og:image" content="https://ing-sanchez-vargas.cl/og-image.jpg">
     <title>Juego del Gato</title>
-    <link rel="stylesheet" href="style.css?v=1.3">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --panel: #111827;
+            --text-primary: #e5e7eb;
+            --text-secondary: #94a3b8;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --cell-bg: #0b1220;
+            --cell-border: #334155;
+            --board-border: #475569;
+            --ad-border: #6b7280;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, var(--bg-secondary), var(--bg-primary) 65%);
+            color: var(--text-primary);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        #layout-wrapper {
+            width: 100%;
+            height: auto !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            overflow: visible;
+            background: radial-gradient(circle at top, var(--bg-secondary), var(--bg-primary) 65%);
+        }
+
+        #sidebar-left,
+        #sidebar-right {
+            display: none;
+            width: 360px;
+            max-width: 360px;
+            height: calc(100vh - 1.5rem);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar-right {
+            display: none;
+            padding: 0.75rem 0.5rem 0.75rem 0;
+            align-self: center;
+            scrollbar-gutter: stable;
+        }
+
+        #sidebar-right .story-section {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+        }
+
+        #main-game-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start !important;
+            width: 100%;
+            min-height: 100vh;
+            padding-top: 2rem;
+            overflow: visible;
+        }
+
+        @media (min-width: 1100px) {
+            #layout-wrapper {
+                justify-content: center;
+                gap: 1rem;
+                padding: 0.75rem;
+            }
+
+            #main-game-column {
+                width: auto !important;
+                flex: 0 0 auto;
+            }
+
+            #sidebar-right {
+                display: block;
+            }
+        }
+
+        @media (max-width: 1099px) {
+            #sidebar-right {
+                display: none !important;
+            }
+        }
+
+        .project-credit {
+            position: static;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.8rem;
+            margin: 0 0 12px 0;
+            padding: 0 1rem;
+        }
+
+        .game-container {
+            width: 90% !important;
+            max-width: 400px !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.6rem;
+            background-color: rgba(17, 24, 39, 0.7);
+            border: 1px solid #334155;
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+            overflow: visible;
+            max-height: none;
+        }
+
+        #start-screen,
+        #game-lobby {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+        }
+
+        #start-screen {
+            display: grid;
+            grid-template-columns: 1fr;
+            align-items: center;
+            justify-items: center;
+        }
+
+        #start-screen h1 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4.5vw, 2.4rem);
+            line-height: 1.1;
+            text-align: center;
+            color: var(--accent);
+            text-shadow: 0 8px 24px rgba(37, 99, 235, 0.28);
+        }
+
+        .story-link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 320px;
+            padding: 0.62rem 0.9rem;
+            border-radius: 10px;
+            border: 1px solid #0e7490;
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #ecfeff;
+            background: linear-gradient(135deg, #0f766e, #0369a1);
+            box-shadow: 0 8px 18px rgba(3, 105, 161, 0.25);
+        }
+
+        #auth-section {
+            width: 90%;
+            max-width: 400px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+            justify-items: center;
+            margin: 0 auto;
+        }
+
+        #auth-name,
+        #auth-pin,
+        #auth-submit-btn,
+        #guest-btn,
+        #btn-pvp,
+        #auth-message {
+            grid-column: 1 / -1;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        #auth-name,
+        #auth-pin {
+            padding: 0.65rem 0.8rem;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        #auth-submit-btn,
+        #guest-btn,
+        #btn-pvp {
+            border: none;
+            border-radius: 10px;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #f8fafc;
+            background-color: var(--accent);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.28);
+            cursor: pointer;
+        }
+
+        .helper-text {
+            margin: 0;
+            min-height: 1.2rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-size: 0.92rem;
+        }
+
+        #selection-section,
+        #game-lobby,
+        #config-pvp,
+        .story-floating-link {
+            display: none;
+        }
+
+        .privacy-link {
+            position: fixed;
+            bottom: 20px;
+            right: 25px;
+            z-index: 9999;
+            font-size: 0.65rem;
+            color: #555;
+            text-decoration: none;
+            opacity: 0.6;
+        }
+    </style>
+    <link rel="preload" href="style.css?v=20260415" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet" href="style.css?v=20260415">
+    </noscript>
     <style>
         #layout-wrapper {
             display: flex !important;
@@ -39,24 +290,30 @@
         <div id="main-game-column">
             <p class="project-credit">
                 Proyecto desarrollado por Rodrigo Sánchez, estudiante de Ingeniería Civil
-                en Informática de la Universidad Diego Portales. Experimento de desarrollo web.</p>
+                en Informática de la Universidad Diego Portales.
+            </p>
+
             <main class="game-container">
                 <div id="start-screen">
                     <h1>Juego del Gato Pro</h1>
-                    <a class="story-link-btn" href="historia.html" aria-label="Abrir historia y estrategias">Historia e
-                        estrategias</a>
+                    <a class="story-link-btn" href="historia.html" aria-label="Abrir historia y estrategias">
+                        Historia e estrategias
+                    </a>
+
                     <section id="auth-section">
                         <input id="auth-name" type="text" placeholder="Nombre">
                         <input id="auth-pin" type="password" placeholder="PIN">
                         <button id="auth-submit-btn" type="button">Iniciar Sesion / Registrarse</button>
                         <button id="guest-btn" type="button">Continuar como Invitado</button>
                         <button id="btn-pvp" type="button">Duelo 1 vs 1</button>
+
                         <div id="config-pvp" style="display: none;" aria-label="Configuracion de duelo local">
                             <input id="pvp-player1" type="text" placeholder="Nombre Jugador 1">
                             <input id="pvp-player2" type="text" placeholder="Nombre Jugador 2">
                             <button id="pvp-start-btn" type="button">!Comenzar Duelo!</button>
                             <button id="pvp-back-btn" type="button">← Volver al inicio</button>
                         </div>
+
                         <p id="auth-message" class="helper-text"></p>
                     </section>
 
@@ -107,7 +364,7 @@
     <a id="floating-story-link" href="historia.html" class="story-floating-link"
         aria-label="Abrir historia y estrategias">Historia e estrategias</a>
 
-    <script src="script.js?v=1.3"></script>
+    <script defer src="script.js?v=20260415"></script>
 </body>
 
 </html>
