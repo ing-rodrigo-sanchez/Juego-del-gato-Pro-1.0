@@ -369,6 +369,8 @@ function showScreen(target) {
     startScreen.style.display = target === 'start' ? 'grid' : 'none';
     gameLobby.style.display = target === 'game' ? 'flex' : 'none';
 
+    document.body.classList.toggle('desktop-start-mode', target === 'start');
+
     if (floatingStoryLink) {
         floatingStoryLink.style.display = target === 'game' ? 'block' : 'none';
     }
