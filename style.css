@@ -193,6 +193,46 @@ body {
     text-align: center;
     color: var(--accent);
     text-shadow: 0 8px 24px rgba(37, 99, 235, 0.28);
+    position: relative;
+    overflow: hidden;
+    animation: titleGlowPulse 2.8s ease-in-out infinite;
+}
+
+#start-screen h1::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-140%) skewX(-18deg);
+    background: linear-gradient(110deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.16) 36%,
+            rgba(255, 255, 255, 0.58) 50%,
+            rgba(255, 255, 255, 0.16) 64%,
+            transparent 100%);
+    animation: titleShineSweep 3.4s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes titleGlowPulse {
+
+    0%,
+    100% {
+        text-shadow: 0 8px 24px rgba(37, 99, 235, 0.28), 0 0 10px rgba(147, 197, 253, 0.22);
+    }
+
+    50% {
+        text-shadow: 0 10px 28px rgba(37, 99, 235, 0.4), 0 0 18px rgba(191, 219, 254, 0.45);
+    }
+}
+
+@keyframes titleShineSweep {
+    from {
+        transform: translateX(-140%) skewX(-18deg);
+    }
+
+    to {
+        transform: translateX(160%) skewX(-18deg);
+    }
 }
 
 .story-link-btn {
@@ -531,6 +571,79 @@ body {
     width: 100%;
     align-items: center;
     justify-items: center;
+}
+
+@media (min-width: 1024px) {
+    body.desktop-start-mode #layout-wrapper {
+        align-items: center;
+        justify-content: center;
+    }
+
+    body.desktop-start-mode #main-game-column {
+        justify-content: center !important;
+        width: 100% !important;
+        padding-top: 0 !important;
+    }
+
+    body.desktop-start-mode .game-container {
+        width: min(88vw, 760px) !important;
+        max-width: 760px !important;
+        min-height: 62vh;
+        padding: 0.85rem 1rem;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+
+    body.desktop-start-mode #start-screen {
+        min-height: 56vh;
+        align-content: center;
+        justify-items: center;
+        gap: 0.8rem;
+    }
+
+    body.desktop-start-mode #auth-section,
+    body.desktop-start-mode #selection-section {
+        width: min(100%, 500px) !important;
+        max-width: 500px !important;
+        margin: 0 auto !important;
+    }
+
+    body.desktop-start-mode #auth-name,
+    body.desktop-start-mode #auth-pin,
+    body.desktop-start-mode #auth-submit-btn,
+    body.desktop-start-mode #guest-btn,
+    body.desktop-start-mode #btn-pvp,
+    body.desktop-start-mode #pvp-player1,
+    body.desktop-start-mode #pvp-player2,
+    body.desktop-start-mode #pvp-start-btn,
+    body.desktop-start-mode #pvp-back-btn,
+    body.desktop-start-mode #auth-message,
+    body.desktop-start-mode #difficulty-selector,
+    body.desktop-start-mode #start-game-btn,
+    body.desktop-start-mode .welcome-text,
+    body.desktop-start-mode #logout-btn {
+        max-width: 390px;
+    }
+
+    body.desktop-start-mode #auth-name,
+    body.desktop-start-mode #auth-pin,
+    body.desktop-start-mode #pvp-player1,
+    body.desktop-start-mode #pvp-player2,
+    body.desktop-start-mode #difficulty-selector {
+        padding: 0.72rem 0.9rem;
+        font-size: 0.96rem;
+    }
+
+    body.desktop-start-mode #auth-submit-btn,
+    body.desktop-start-mode #guest-btn,
+    body.desktop-start-mode #btn-pvp,
+    body.desktop-start-mode #pvp-start-btn,
+    body.desktop-start-mode #pvp-back-btn,
+    body.desktop-start-mode #start-game-btn,
+    body.desktop-start-mode #logout-btn {
+        padding: 0.74rem 1.05rem;
+        font-size: 0.96rem;
+    }
 }
 
 #start-screen h1,
