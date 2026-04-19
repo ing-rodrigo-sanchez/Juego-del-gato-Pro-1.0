@@ -31,6 +31,8 @@ const cells = document.querySelectorAll('.cell');
 const statusElement = document.getElementById('status');
 const resetButton = document.getElementById('reset-btn');
 const startScreen = document.getElementById('start-screen');
+const startTitle = document.getElementById('main-title');
+const modesTitle = document.getElementById('modes-title');
 const authSection = document.getElementById('auth-section');
 const selectionSection = document.getElementById('selection-section');
 const gameLobby = document.getElementById('game-lobby');
@@ -40,21 +42,31 @@ const welcomeContext = document.getElementById('welcome-context');
 const authNameInput = document.getElementById('auth-name');
 const authPinInput = document.getElementById('auth-pin');
 const authMessage = document.getElementById('auth-message');
+const authActionView = document.getElementById('auth-action-view');
+const authFormView = document.getElementById('auth-form-view');
+const authLoginButton = document.getElementById('auth-login-btn');
+const authRegisterButton = document.getElementById('auth-register-btn');
 const authSubmitButton = document.getElementById('auth-submit-btn');
-const guestButton = document.getElementById('guest-btn');
+const authBackButton = document.getElementById('auth-back-btn');
+
 const pvpButton = document.getElementById('btn-pvp');
-const pvpConfig = document.getElementById('config-pvp');
+const aiModeButton = document.getElementById('btn-ai-mode');
+const onlineModeButton = document.getElementById('btn-online-mode');
+const modeMessage = document.getElementById('mode-message');
+const modesMenuPanel = document.getElementById('modes-menu-panel');
+const modeAiPanel = document.getElementById('mode-ai-panel');
+const modePvpPanel = document.getElementById('mode-pvp-panel');
+const modeAiBackButton = document.getElementById('mode-ai-back-btn');
+const modePvpBackButton = document.getElementById('mode-pvp-back-btn');
 const pvpPlayerOneInput = document.getElementById('pvp-player1');
 const pvpPlayerTwoInput = document.getElementById('pvp-player2');
 const pvpStartButton = document.getElementById('pvp-start-btn');
-const pvpBackButton = document.getElementById('pvp-back-btn');
 const logoutButton = document.getElementById('logout-btn');
 
 const difficultySelector = document.getElementById('difficulty-selector');
 const startGameButton = document.getElementById('start-game-btn');
 const welcomeMessage = document.getElementById('welcome-message');
 const timerRoot = document.getElementById('timer');
-const floatingStoryLink = document.getElementById('floating-story-link');
 
 const profileName = document.getElementById('profile-name');
 const profileWins = document.getElementById('profile-wins');
@@ -74,7 +86,7 @@ const winningCombinations = [
 ];
 
 const STORAGE_KEY = 'tictactoe_accounts_v1';
-const GUEST_STATS_KEY = 'tictactoe_guest_stats_v1';
+const SESSION_ACCOUNT_KEY = 'tictactoe_active_account_name';
 const PLAYER_SYMBOL = 'X';
 const AI_SYMBOL = 'O';
 const TURN_TIME_SECONDS = 10;
@@ -90,12 +102,13 @@ let aiTimeoutId = null;
 
 let gameMode = 'ai';
 let isPvP = false;
-let isGuestSession = true;
-let currentAccountName = 'Invitado';
+let currentAccountName = '';
 let currentAuthenticatedUser = null;
 let currentStartSection = 'auth';
+let authIntent = null;
 let pvpPlayerOneName = 'Jugador 1';
 let pvpPlayerTwoName = 'Jugador 2';
+let pvpNextStartingSymbol = PLAYER_SYMBOL;
 let pvpStats = {
     playerOneWins: 0,
     playerTwoWins: 0,
@@ -197,141 +210,174 @@ async function saveAccounts(accounts) {
     return { ok: true };
 }
 
-function loadGuestStats() {
-    const rawData = localStorage.getItem(GUEST_STATS_KEY);
-    if (!rawData) {
-        return { victorias: 0, derrotas: 0, empates: 0 };
-    }
-
+async function registerUser(name, pin) {
     try {
-        const parsed = JSON.parse(rawData);
-        if (typeof parsed !== 'object' || parsed === null) {
-            return { victorias: 0, derrotas: 0, empates: 0 };
+        const normalizedName = name.trim();
+        if (!normalizedName || !pin.trim()) {
+            return { ok: false, message: 'Escribe nombre y PIN.' };
         }
 
-        return {
-            victorias: Number.isFinite(parsed.victorias) ? parsed.victorias : 0,
-            derrotas: Number.isFinite(parsed.derrotas) ? parsed.derrotas : 0,
-            empates: Number.isFinite(parsed.empates) ? parsed.empates : 0
-        };
-    } catch {
-        return { victorias: 0, derrotas: 0, empates: 0 };
-    }
-}
+        if (!supabaseDb) {
+            console.error('Supabase no esta disponible: cliente no inicializado.');
+            return { ok: false, message: 'Error de conexión con el servidor' };
+        }
 
-function saveGuestStats(stats) {
-    localStorage.setItem(GUEST_STATS_KEY, JSON.stringify(stats));
-}
+        const { data: existingProfile, error: existingError } = await supabaseDb
+            .from('perfiles')
+            .select('nombre, pin, victorias, derrotas, empates')
+            .eq('nombre', normalizedName)
+            .maybeSingle();
 
-async function registerUser(name, pin) {
-    const normalizedName = name.trim();
-    if (!normalizedName || !pin.trim()) {
-        return { ok: false, message: 'Escribe nombre y PIN.' };
-    }
+        if (existingError) {
+            console.error('Error verificando usuario en Supabase:', existingError);
+            return { ok: false, message: 'Error de conexión con el servidor' };
+        }
 
-    if (!supabaseDb) {
-        console.error('Supabase no esta disponible: cliente no inicializado.');
-        return { ok: false, message: 'Supabase no esta disponible.' };
-    }
+        if (existingProfile) {
+            return { ok: false, message: 'Este nombre ya está en uso' };
+        }
 
-    const { data: existingProfile, error: existingError } = await supabaseDb
-        .from('perfiles')
-        .select('nombre, pin, victorias, derrotas, empates')
-        .eq('nombre', normalizedName)
-        .maybeSingle();
+        console.log('Intentando insertar en Supabase...');
+        const { data: insertedProfile, error } = await supabaseDb
+            .from('perfiles')
+            .insert([
+                {
+                    nombre: normalizedName,
+                    pin,
+                    victorias: 0,
+                    derrotas: 0,
+                    empates: 0
+                }
+            ])
+            .select('nombre, pin, victorias, derrotas, empates')
+            .single();
 
-    if (existingError) {
-        console.error('Error verificando usuario en Supabase:', existingError);
-        return { ok: false, message: 'No se pudo verificar el usuario.' };
-    }
-
-    if (existingProfile) {
-        return { ok: false, message: 'Ese nombre ya existe.' };
-    }
-
-    console.log('Intentando insertar en Supabase...');
-    const { data: insertedProfile, error } = await supabaseDb
-        .from('perfiles')
-        .insert([
-            {
-                nombre: normalizedName,
-                pin,
-                victorias: 0,
-                derrotas: 0,
-                empates: 0
+        if (error || !insertedProfile) {
+            if (error && error.code === '23505') {
+                return { ok: false, message: 'Este nombre ya está en uso' };
             }
-        ])
-        .select('nombre, pin, victorias, derrotas, empates')
-        .single();
 
-    if (error || !insertedProfile) {
-        console.error('Detalle del error:', error);
-        return { ok: false, message: 'No se pudo crear el perfil.' };
+            console.error('Detalle del error:', error);
+            return { ok: false, message: 'Error de conexión con el servidor' };
+        }
+
+        currentAuthenticatedUser = insertedProfile;
+        currentAccountName = insertedProfile.nombre;
+        localStorage.setItem(SESSION_ACCOUNT_KEY, currentAccountName);
+        window.currentAuthenticatedUser = insertedProfile;
+
+        return { ok: true, message: 'Cuenta creada. Ya puedes iniciar sesion.', user: insertedProfile };
+    } catch (unexpectedRegisterError) {
+        console.error('Fallo inesperado durante registro en Supabase:', unexpectedRegisterError);
+        return { ok: false, message: 'Error de conexión con el servidor' };
     }
-
-    currentAuthenticatedUser = insertedProfile;
-    window.currentAuthenticatedUser = insertedProfile;
-
-    return { ok: true, message: 'Cuenta creada. Ya puedes iniciar sesion.', user: insertedProfile };
 }
 
 async function loginUser(name, pin) {
-    const normalizedName = name.trim();
-    if (!normalizedName || !pin.trim()) {
-        return { ok: false, message: 'Escribe nombre y PIN.' };
+    try {
+        const normalizedName = name.trim();
+        if (!normalizedName || !pin.trim()) {
+            return { ok: false, message: 'Escribe nombre y PIN.' };
+        }
+
+        if (!supabaseDb) {
+            console.error('Supabase no esta disponible: cliente no inicializado.');
+            return { ok: false, message: 'Error de conexión con el servidor' };
+        }
+
+        const { data: user, error } = await supabaseDb
+            .from('perfiles')
+            .select('nombre, pin, victorias, derrotas, empates')
+            .eq('nombre', normalizedName)
+            .maybeSingle();
+
+        if (error) {
+            console.error('Error al iniciar sesion en Supabase:', error);
+            return { ok: false, message: 'Error de conexión con el servidor' };
+        }
+
+        if (!user) {
+            return { ok: false, message: 'La cuenta no existe. Por favor, verifica el nombre o regístrate' };
+        }
+
+        if (user.pin !== pin) {
+            return { ok: false, message: 'Nombre o PIN incorrecto.' };
+        }
+
+        currentAuthenticatedUser = user;
+        currentAccountName = user.nombre;
+        localStorage.setItem(SESSION_ACCOUNT_KEY, currentAccountName);
+        window.currentAuthenticatedUser = user;
+        return { ok: true, user };
+    } catch (unexpectedLoginError) {
+        console.error('Fallo inesperado durante login en Supabase:', unexpectedLoginError);
+        return { ok: false, message: 'Error de conexión con el servidor' };
+    }
+}
+
+async function restoreSessionFromStorage() {
+    const persistedAccountName = localStorage.getItem(SESSION_ACCOUNT_KEY);
+    if (!persistedAccountName) {
+        return false;
+    }
+
+    const normalizedPersistedName = persistedAccountName.trim();
+    if (!normalizedPersistedName) {
+        localStorage.removeItem(SESSION_ACCOUNT_KEY);
+        return false;
     }
 
     if (!supabaseDb) {
-        console.error('Supabase no esta disponible: cliente no inicializado.');
-        return { ok: false, message: 'Supabase no esta disponible.' };
+        console.error('No se pudo restaurar la sesion: cliente de Supabase no inicializado.');
+        return false;
     }
 
-    const { data: user, error } = await supabaseDb
+    const { data: persistedUser, error } = await supabaseDb
         .from('perfiles')
         .select('nombre, pin, victorias, derrotas, empates')
-        .eq('nombre', normalizedName)
+        .eq('nombre', normalizedPersistedName)
         .maybeSingle();
 
-    if (error) {
-        console.error('Error al iniciar sesion en Supabase:', error);
-        return { ok: false, message: 'No se pudo iniciar sesion.' };
+    if (error || !persistedUser) {
+        console.error(`No se pudo restaurar sesion para ${normalizedPersistedName}:`, error);
+        localStorage.removeItem(SESSION_ACCOUNT_KEY);
+        return false;
     }
 
-    if (!user || user.pin !== pin) {
-        return { ok: false, message: 'Nombre o PIN incorrecto.' };
-    }
-
-    currentAuthenticatedUser = user;
-    window.currentAuthenticatedUser = user;
-    return { ok: true, user };
+    currentAuthenticatedUser = persistedUser;
+    currentAccountName = persistedUser.nombre;
+    window.currentAuthenticatedUser = persistedUser;
+    completeAuthAsUser();
+    return true;
 }
 
 function updateAccountStats(result) {
-    if (isGuestSession) {
-        const guestStats = loadGuestStats();
-
-        if (result === 'win') {
-            guestStats.victorias += 1;
-        } else if (result === 'loss') {
-            guestStats.derrotas += 1;
-        } else {
-            guestStats.empates += 1;
-        }
-
-        saveGuestStats(guestStats);
-        renderProfile();
-        return;
-    }
-
     void (async () => {
         if (!supabaseDb) {
-            console.error('Supabase no esta disponible: cliente no inicializado.');
+            console.error('No se pudieron guardar estadisticas: cliente de Supabase no inicializado.');
             return;
         }
 
-        const user = currentAuthenticatedUser;
-        if (!user || user.nombre !== currentAccountName) {
+        const sessionName = currentAccountName?.trim();
+        if (!sessionName) {
+            console.error('No se pudieron guardar estadisticas: currentAccountName no esta definido en sesion.');
             return;
+        }
+
+        let user = currentAuthenticatedUser;
+        if (!user || user.nombre !== sessionName) {
+            const { data: sessionUser, error: sessionFetchError } = await supabaseDb
+                .from('perfiles')
+                .select('nombre, pin, victorias, derrotas, empates')
+                .eq('nombre', sessionName)
+                .maybeSingle();
+
+            if (sessionFetchError || !sessionUser) {
+                console.error(`No se pudieron cargar estadisticas base para ${sessionName}:`, sessionFetchError);
+                return;
+            }
+
+            user = sessionUser;
         }
 
         const updatedStats = {
@@ -351,19 +397,21 @@ function updateAccountStats(result) {
         const { data, error } = await supabaseDb
             .from('perfiles')
             .update(updatedStats)
-            .eq('nombre', user.nombre)
-            .eq('pin', user.pin)
+            .eq('nombre', sessionName)
             .select('nombre, pin, victorias, derrotas, empates')
             .single();
 
         if (error || !data) {
-            console.error('Error actualizando estadisticas en Supabase:', error);
+            console.error(`Error actualizando estadisticas en Supabase para ${sessionName}:`, error);
             return;
         }
 
         currentAuthenticatedUser = data;
+        currentAccountName = data.nombre;
         window.currentAuthenticatedUser = data;
         renderProfile();
+    })().catch((statsError) => {
+        console.error('Fallo inesperado al guardar estadisticas en Supabase:', statsError);
     })();
 }
 
@@ -384,25 +432,15 @@ function renderProfile() {
     profileDraws.style.display = 'block';
     profilePvpScore.style.display = 'none';
 
-    if (isGuestSession) {
-        const guestStats = loadGuestStats();
-        profileName.textContent = 'Jugador: Invitado';
-        profileWins.textContent = `Victorias: ${guestStats.victorias}`;
-        profileLosses.textContent = `Derrotas: ${guestStats.derrotas}`;
-        profileDraws.textContent = `Empates: ${guestStats.empates}`;
-        return;
-    }
-
     const user = currentAuthenticatedUser && currentAuthenticatedUser.nombre === currentAccountName
         ? currentAuthenticatedUser
         : null;
 
     if (!user) {
-        profileName.textContent = 'Jugador: Invitado';
-        const guestStats = loadGuestStats();
-        profileWins.textContent = `Victorias: ${guestStats.victorias}`;
-        profileLosses.textContent = `Derrotas: ${guestStats.derrotas}`;
-        profileDraws.textContent = `Empates: ${guestStats.empates}`;
+        profileName.textContent = 'Jugador';
+        profileWins.textContent = 'Victorias: 0';
+        profileLosses.textContent = 'Derrotas: 0';
+        profileDraws.textContent = 'Empates: 0';
         return;
     }
 
@@ -412,8 +450,97 @@ function renderProfile() {
     profileDraws.textContent = `Empates: ${Number.isFinite(user.empates) ? user.empates : 0}`;
 }
 
-function setAuthMessage(message) {
+function setAuthMessage(message, tone = 'neutral') {
     authMessage.textContent = message;
+    authMessage.classList.remove('auth-message-error');
+    if (message && tone === 'error') {
+        authMessage.classList.add('auth-message-error');
+    }
+}
+
+function setModeMessage(message, tone = 'neutral') {
+    if (!modeMessage) {
+        return;
+    }
+
+    modeMessage.textContent = message;
+    modeMessage.classList.remove('auth-message-error');
+    if (message && tone === 'error') {
+        modeMessage.classList.add('auth-message-error');
+    }
+}
+
+function updateStartTitle() {
+    if (!startTitle || !modesTitle) {
+        return;
+    }
+
+    const showModesTitle = currentStartSection === 'selection';
+    startTitle.classList.toggle('title-hidden', showModesTitle);
+    modesTitle.classList.toggle('title-hidden', !showModesTitle);
+    startTitle.setAttribute('aria-hidden', String(showModesTitle));
+    modesTitle.setAttribute('aria-hidden', String(!showModesTitle));
+}
+
+function updateWelcomeMessage() {
+    if (!welcomeMessage) {
+        return;
+    }
+
+    welcomeMessage.textContent = currentAccountName
+        ? `Hola, ${currentAccountName}`
+        : 'Hola';
+}
+
+function applyEntryRouteFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedView = params.get('view');
+    const returnTarget = params.get('return');
+    const shouldOpenModes = requestedView === 'modos' || requestedView === 'modes' || returnTarget === 'modos';
+
+    if (shouldOpenModes && currentAuthenticatedUser && currentAccountName) {
+        showScreen('start');
+        showStartSection('selection');
+        setAuthMessage('');
+        setModeMessage('');
+    }
+}
+
+function setAuthView(viewName) {
+    if (!authActionView || !authFormView) {
+        return;
+    }
+
+    const showActionView = viewName === 'actions';
+    authActionView.classList.toggle('auth-view-visible', showActionView);
+    authFormView.classList.toggle('auth-view-visible', !showActionView);
+}
+
+function showAuthFormFor(intent) {
+    authIntent = intent;
+    setAuthMessage('');
+    authNameInput.value = '';
+    authPinInput.value = '';
+    setAuthView('form');
+    authNameInput.focus();
+}
+
+function showModePanel(panelName) {
+    if (!modesMenuPanel || !modeAiPanel || !modePvpPanel) {
+        return;
+    }
+
+    const showMenu = panelName === 'menu';
+    const showAi = panelName === 'ai';
+    const showPvp = panelName === 'pvp';
+
+    modesMenuPanel.classList.toggle('mode-panel-visible', showMenu);
+    modeAiPanel.classList.toggle('mode-panel-visible', showAi);
+    modePvpPanel.classList.toggle('mode-panel-visible', showPvp);
+
+    if (showMenu) {
+        setModeMessage('');
+    }
 }
 
 function setBoardInteractivity(isEnabled) {
@@ -426,22 +553,9 @@ function setBoardInteractivity(isEnabled) {
 
 function showDefaultAuthActions() {
     authSection.style.display = 'grid';
-    authNameInput.style.display = 'block';
-    authPinInput.style.display = 'block';
-    authSubmitButton.style.display = 'block';
-    guestButton.style.display = 'block';
-    pvpButton.style.display = 'block';
-    pvpConfig.style.display = 'none';
-}
-
-function showPvpSetup() {
-    authNameInput.style.display = 'none';
-    authPinInput.style.display = 'none';
-    authSubmitButton.style.display = 'none';
-    guestButton.style.display = 'none';
-    pvpButton.style.display = 'none';
-    pvpConfig.style.display = 'grid';
-    setBoardInteractivity(false);
+    setAuthView('actions');
+    authIntent = null;
+    setModeMessage('');
 }
 
 function clearPvpNameInputs() {
@@ -449,16 +563,10 @@ function clearPvpNameInputs() {
     pvpPlayerTwoInput.value = '';
 }
 
-function backFromPvpSetupToAuth() {
-    pvpConfig.style.display = 'none';
-    showDefaultAuthActions();
-    clearPvpNameInputs();
-    setAuthMessage('');
-}
-
 function resetPvpState() {
     pvpPlayerOneName = 'Jugador 1';
     pvpPlayerTwoName = 'Jugador 2';
+    pvpNextStartingSymbol = PLAYER_SYMBOL;
     pvpStats = {
         playerOneWins: 0,
         playerTwoWins: 0,
@@ -488,6 +596,11 @@ function showStartSection(sectionName) {
     currentStartSection = sectionName;
     authSection.style.display = sectionName === 'auth' ? 'grid' : 'none';
     selectionSection.style.display = sectionName === 'selection' ? 'grid' : 'none';
+    if (sectionName === 'selection') {
+        showModePanel('menu');
+        updateWelcomeMessage();
+    }
+    updateStartTitle();
     syncWelcomeContextVisibility();
 }
 
@@ -495,9 +608,7 @@ function showScreen(target) {
     startScreen.style.display = target === 'start' ? 'grid' : 'none';
     gameLobby.style.display = target === 'game' ? 'flex' : 'none';
 
-    if (floatingStoryLink) {
-        floatingStoryLink.style.display = target === 'game' ? 'block' : 'none';
-    }
+    updateStartTitle();
 
     syncWelcomeContextVisibility();
 }
@@ -691,11 +802,11 @@ function chooseAiMoveIndex() {
         return null;
     }
 
-    const difficulty = difficultySelector?.value || 'principiante';
+    const difficulty = difficultySelector?.value || 'facil';
     const randomMove = getRandomEmptyIndex();
 
-    if (difficulty === 'principiante') {
-        // Principiante: 50% aleatorio y 50% bloqueo simple.
+    if (difficulty === 'facil') {
+        // Facil: 50% aleatorio y 50% bloqueo simple.
         if (!shouldUseStrategy(0.5)) {
             return randomMove;
         }
@@ -704,14 +815,14 @@ function chooseAiMoveIndex() {
         return blockingMove !== null ? blockingMove : randomMove;
     }
 
-    if (difficulty === 'intermedio') {
-        // Intermedio: bloqueador reactivo. Si no hay amenaza, juega aleatorio.
+    if (difficulty === 'medio') {
+        // Medio: bloqueador reactivo. Si no hay amenaza, juega aleatorio.
         const blockingMove = getImmediateBlockingMove();
         return blockingMove !== null ? blockingMove : randomMove;
     }
 
-    if (difficulty === 'avanzado') {
-        // Avanzado: minimax con profundidad limitada (2 niveles).
+    if (difficulty === 'dificil') {
+        // Dificil: minimax con profundidad limitada (2 niveles).
         const bestMove = getBestMoveWithMinimax([...boardState], 2);
         return bestMove !== null ? bestMove : randomMove;
     }
@@ -919,7 +1030,12 @@ function handleCellClick(event) {
 
 function resetBoardState() {
     boardState = ['', '', '', '', '', '', '', '', ''];
-    currentPlayer = PLAYER_SYMBOL;
+    if (isPvP) {
+        currentPlayer = pvpNextStartingSymbol;
+        pvpNextStartingSymbol = pvpNextStartingSymbol === PLAYER_SYMBOL ? AI_SYMBOL : PLAYER_SYMBOL;
+    } else {
+        currentPlayer = PLAYER_SYMBOL;
+    }
     isGameActive = true;
     clearScheduledActions();
 
@@ -951,8 +1067,6 @@ function startMatch(selectedMode) {
 }
 
 function backToStart() {
-    const wasPvP = isPvP;
-
     clearScheduledActions();
     resetBoardState();
     isGameActive = false;
@@ -961,17 +1075,8 @@ function backToStart() {
     updateTimerUI();
     updateStatus('Configura el modo y dificultad');
     showScreen('start');
-
-    if (wasPvP) {
-        isPvP = false;
-        resetPvpState();
-        showDefaultAuthActions();
-        showStartSection('auth');
-        setAuthMessage('');
-        renderProfile();
-        return;
-    }
-
+    isPvP = false;
+    showModePanel('menu');
     showStartSection('selection');
 }
 
@@ -990,129 +1095,146 @@ function logoutSession() {
 
     gameMode = 'ai';
     isPvP = false;
-    currentAccountName = 'Invitado';
-    isGuestSession = true;
+    currentAccountName = '';
     currentAuthenticatedUser = null;
+    localStorage.removeItem(SESSION_ACCOUNT_KEY);
     window.currentAuthenticatedUser = null;
     resetPvpState();
     showDefaultAuthActions();
 
     authNameInput.value = '';
     authPinInput.value = '';
-    setAuthMessage('Sesion cerrada.');
-    welcomeMessage.textContent = 'Hola, Invitado';
+    setAuthMessage('');
+    updateWelcomeMessage();
+    showModePanel('menu');
 
-    updateStatus('Inicia sesion o continua como invitado');
+    updateStatus('Inicia sesion para jugar');
     updateTimerUI();
     renderProfile();
     showScreen('start');
     showStartSection('auth');
 }
 
-function completeAuthAsUser(name, guestMode) {
-    isPvP = false;
-    currentAccountName = name;
-    isGuestSession = guestMode;
-    if (guestMode) {
-        currentAuthenticatedUser = null;
-        window.currentAuthenticatedUser = null;
+function completeAuthAsUser() {
+    if (!currentAccountName) {
+        setAuthMessage('No se pudo abrir Modos de Juego. Intenta iniciar sesion nuevamente.', 'error');
+        return;
     }
+
+    isPvP = false;
     showDefaultAuthActions();
     renderProfile();
     setAuthMessage('');
-    welcomeMessage.textContent = `Hola, ${currentAccountName}`;
+    setModeMessage('');
+    updateWelcomeMessage();
     showScreen('start');
     showStartSection('selection');
 }
 
-async function authenticateWithSupabase(name, pin) {
-    if (!supabaseDb) {
-        console.error('Supabase no esta disponible: cliente no inicializado.');
-        return { ok: false, message: 'Supabase no esta disponible.' };
-    }
-
-    const { data: existingProfile, error: fetchError } = await supabaseDb
-        .from('perfiles')
-        .select('nombre, pin, victorias, derrotas, empates')
-        .eq('nombre', name)
-        .maybeSingle();
-
-    if (fetchError) {
-        console.error('Error consultando perfil en Supabase:', fetchError);
-        return { ok: false, message: 'No se pudo verificar el perfil.' };
-    }
-
-    if (existingProfile) {
-        if (existingProfile.pin !== pin) {
-            alert('PIN incorrecto');
-            return { ok: false };
-        }
-
-        return loginUser(name, pin);
-    }
-
-    return registerUser(name, pin);
-}
-
 authSubmitButton.addEventListener('click', async () => {
+    if (!authIntent) {
+        setAuthMessage('Selecciona primero Iniciar Sesion o Crear Cuenta.', 'error');
+        return;
+    }
+
     const name = authNameInput.value.trim();
     const pin = authPinInput.value.trim();
 
     if (!name || !pin) {
-        setAuthMessage('Escribe nombre y PIN.');
+        setAuthMessage('Escribe nombre y PIN.', 'error');
         return;
     }
 
+    let authResult = null;
     authSubmitButton.disabled = true;
-    const authResult = await authenticateWithSupabase(name, pin);
-    authSubmitButton.disabled = false;
+    try {
+        authResult = authIntent === 'login'
+            ? await loginUser(name, pin)
+            : await registerUser(name, pin);
+    } catch (authFlowError) {
+        console.error('Fallo inesperado en flujo de autenticacion:', authFlowError);
+        setAuthMessage('Error de conexión con el servidor', 'error');
+        return;
+    } finally {
+        authSubmitButton.disabled = false;
+    }
 
     if (!authResult.ok) {
         if (authResult.message) {
-            setAuthMessage(authResult.message);
+            setAuthMessage(authResult.message, 'error');
         }
         return;
     }
 
-    completeAuthAsUser(authResult.user.nombre, false);
+    completeAuthAsUser();
 });
 
-guestButton.addEventListener('click', () => {
-    completeAuthAsUser('Invitado', true);
+authLoginButton.addEventListener('click', () => {
+    showAuthFormFor('login');
 });
 
-pvpButton.addEventListener('click', () => {
+authRegisterButton.addEventListener('click', () => {
+    showAuthFormFor('register');
+});
+
+authBackButton.addEventListener('click', () => {
     setAuthMessage('');
-    showPvpSetup();
+    showDefaultAuthActions();
 });
 
-pvpBackButton.addEventListener('click', () => {
-    backFromPvpSetupToAuth();
-});
+if (pvpButton) {
+    pvpButton.addEventListener('click', () => {
+        setModeMessage('');
+        showModePanel('pvp');
+    });
+}
 
-pvpStartButton.addEventListener('click', () => {
-    const playerOne = pvpPlayerOneInput.value.trim();
-    const playerTwo = pvpPlayerTwoInput.value.trim();
+if (aiModeButton) {
+    aiModeButton.addEventListener('click', () => {
+        setModeMessage('');
+        showModePanel('ai');
+    });
+}
 
-    if (!playerOne || !playerTwo) {
-        setAuthMessage('Escribe los dos nombres del duelo.');
-        return;
-    }
+if (modeAiBackButton) {
+    modeAiBackButton.addEventListener('click', () => {
+        showModePanel('menu');
+    });
+}
 
-    pvpPlayerOneName = playerOne;
-    pvpPlayerTwoName = playerTwo;
-    pvpStats = {
-        playerOneWins: 0,
-        playerTwoWins: 0,
-        draws: 0
-    };
+if (modePvpBackButton) {
+    modePvpBackButton.addEventListener('click', () => {
+        clearPvpNameInputs();
+        showModePanel('menu');
+    });
+}
 
-    currentAccountName = pvpPlayerOneName;
-    isGuestSession = true;
-    setAuthMessage('');
-    authSection.style.display = 'none';
-    startMatch('pvp');
-});
+if (onlineModeButton) {
+    onlineModeButton.disabled = true;
+}
+
+if (pvpStartButton) {
+    pvpStartButton.addEventListener('click', () => {
+        const playerOne = pvpPlayerOneInput.value.trim();
+        const playerTwo = pvpPlayerTwoInput.value.trim();
+
+        if (!playerOne || !playerTwo) {
+            setModeMessage('Escribe los dos nombres del duelo.', 'error');
+            return;
+        }
+
+        pvpPlayerOneName = playerOne;
+        pvpPlayerTwoName = playerTwo;
+        pvpStats = {
+            playerOneWins: 0,
+            playerTwoWins: 0,
+            draws: 0
+        };
+
+        setModeMessage('');
+        startMatch('pvp');
+    });
+}
 
 cells.forEach((cell) => {
     cell.addEventListener('click', handleCellClick);
@@ -1123,10 +1245,15 @@ startGameButton.addEventListener('click', () => startMatch('ai'));
 backToStartButton.addEventListener('click', backToStart);
 logoutButton.addEventListener('click', logoutSession);
 
-updateStatus('Inicia sesion o continua como invitado');
+updateStatus('Inicia sesion para comenzar');
 updateTimerUI();
 setBoardInteractivity(false);
 showDefaultAuthActions();
 renderProfile();
 showScreen('start');
 showStartSection('auth');
+
+window.onload = async () => {
+    await restoreSessionFromStorage();
+    applyEntryRouteFromQuery();
+};
