@@ -1,3 +1,15 @@
+const SUPABASE_URL = 'https://wnskmjrxfboqyilpguft.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_L7E4Im9BoiPqXJ5B9zJElg_hgB-I7vH';
+
+let supabaseClient = null;
+if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = supabaseClient;
+    console.log('Supabase configurado correctamente');
+} else {
+    console.warn('No se detecto el SDK de Supabase. Verifica que este cargado en index.html.');
+}
+
 console.log('Versión 1.3 cargada correctamente');
 
 const cells = document.querySelectorAll('.cell');
