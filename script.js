@@ -1,10 +1,19 @@
 const SUPABASE_URL = 'https://wnskmjrxfboqyilpguft.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_L7E4Im9BoiPqXJ5B9zJElg_hgB-I7vH';
+const SUPABASE_KEY = 'sb_publishable_L7E4Im9BoiPqXJ5B9zJElg_hgB-I7vH';
+
+const hasPlaceholderCredentials =
+    SUPABASE_URL.includes('your-project') ||
+    SUPABASE_KEY.includes('your-anon-key') ||
+    SUPABASE_KEY.includes('YOUR_');
+
+if (hasPlaceholderCredentials) {
+    console.error('Las credenciales de Supabase parecen de ejemplo. Revisa SUPABASE_URL y SUPABASE_KEY.');
+}
 
 let supabaseClient = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
     try {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         window.supabaseClient = supabaseClient;
         console.log('Supabase configurado correctamente');
     } catch (connectionError) {
@@ -949,7 +958,8 @@ async function authenticateWithSupabase(name, pin) {
         return { ok: true, user: existingProfile };
     }
 
-    const { data: insertedProfile, error: insertError } = await supabaseClient
+    console.log('Intentando insertar en Supabase...');
+    const { data: insertedProfile, error } = await supabaseClient
         .from('perfiles')
         .insert([
             {
@@ -963,8 +973,8 @@ async function authenticateWithSupabase(name, pin) {
         .select('nombre, pin, victorias, derrotas, empates')
         .single();
 
-    if (insertError || !insertedProfile) {
-        console.error('Error creando perfil en Supabase:', insertError);
+    if (error || !insertedProfile) {
+        console.error('Detalle del error:', error);
         return { ok: false, message: 'No se pudo crear el perfil.' };
     }
 
