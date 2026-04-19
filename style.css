@@ -21,7 +21,7 @@ body {
     min-height: 100vh;
     background: radial-gradient(circle at top, var(--bg-secondary), var(--bg-primary) 65%);
     color: var(--text-primary);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', sans-serif;
     overflow-x: hidden;
 }
 
@@ -521,6 +521,116 @@ body {
 }
 
 .auth-message-error {
+    color: #fca5a5;
+}
+
+#ranking-inicio {
+    width: 100%;
+    max-width: 320px;
+    margin-top: -0.15rem;
+    padding: 0.85rem 1rem 0.95rem;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.24);
+}
+
+#ranking-inicio h2 {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: center;
+    letter-spacing: 0.02em;
+}
+
+#ranking-inicio ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: ranking-position;
+    display: grid;
+    gap: 0.4rem;
+}
+
+#ranking-inicio li {
+    counter-increment: ranking-position;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.52rem 0.7rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.24);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.35;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+#ranking-inicio li:hover {
+    background: rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.12), 0 8px 18px rgba(37, 99, 235, 0.16);
+    transform: translateY(-1px);
+}
+
+#ranking-inicio li:last-child {
+    border-bottom: none;
+}
+
+#ranking-inicio li::before {
+    flex: 0 0 auto;
+    min-width: 2.4ch;
+    color: #cbd5e1;
+    font-weight: 700;
+    text-align: right;
+    content: counter(ranking-position) ".";
+}
+
+#ranking-inicio li:nth-child(1)::before {
+    content: "🥇";
+}
+
+#ranking-inicio li:nth-child(2)::before {
+    content: "🥈";
+}
+
+#ranking-inicio li:nth-child(3)::before {
+    content: "🥉";
+}
+
+#ranking-inicio li .ranking-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#ranking-inicio li .ranking-wins {
+    flex: 0 0 auto;
+    font-size: 0.98rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), #7dd3fc 65%, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 14px rgba(37, 99, 235, 0.3);
+}
+
+#ranking-inicio .ranking-empty,
+#ranking-inicio .ranking-error {
+    margin: 0;
+    font-size: 0.88rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+#ranking-inicio .ranking-error {
     color: #fca5a5;
 }
 
