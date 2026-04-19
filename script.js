@@ -3,11 +3,16 @@ const SUPABASE_ANON_KEY = 'sb_publishable_L7E4Im9BoiPqXJ5B9zJElg_hgB-I7vH';
 
 let supabaseClient = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.supabaseClient = supabaseClient;
-    console.log('Supabase configurado correctamente');
+    try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.supabaseClient = supabaseClient;
+        console.log('Supabase configurado correctamente');
+    } catch (connectionError) {
+        console.error('Error al crear el cliente de Supabase:', connectionError);
+    }
 } else {
     console.warn('No se detecto el SDK de Supabase. Verifica que este cargado en index.html.');
+    console.error('No se pudo conectar a Supabase porque el SDK no esta disponible.');
 }
 
 console.log('Versión 1.3 cargada correctamente');
@@ -918,16 +923,18 @@ function completeAuthAsUser(name, guestMode) {
 
 async function authenticateWithSupabase(name, pin) {
     if (!supabaseClient) {
+        console.error('Supabase no esta disponible: cliente no inicializado.');
         return { ok: false, message: 'Supabase no esta disponible.' };
     }
 
     const { data: existingProfile, error: fetchError } = await supabaseClient
         .from('perfiles')
-        .select('nombre, pin, victorias, derrotas')
+        .select('nombre, pin, victorias, derrotas, empates')
         .eq('nombre', name)
         .maybeSingle();
 
     if (fetchError) {
+        console.error('Error consultando perfil en Supabase:', fetchError);
         return { ok: false, message: 'No se pudo verificar el perfil.' };
     }
 
@@ -949,13 +956,15 @@ async function authenticateWithSupabase(name, pin) {
                 nombre: name,
                 pin,
                 victorias: 0,
-                derrotas: 0
+                derrotas: 0,
+                empates: 0
             }
         ])
-        .select('nombre, pin, victorias, derrotas')
+        .select('nombre, pin, victorias, derrotas, empates')
         .single();
 
     if (insertError || !insertedProfile) {
+        console.error('Error creando perfil en Supabase:', insertError);
         return { ok: false, message: 'No se pudo crear el perfil.' };
     }
 
