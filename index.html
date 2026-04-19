@@ -184,22 +184,28 @@
         #auth-section {
             width: 90%;
             max-width: 400px;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 0.5rem;
-            justify-items: center;
             margin: 0 auto;
         }
 
+        #auth-action-view,
+        #auth-form-view,
         #auth-name,
         #auth-pin,
         #auth-submit-btn,
-        #guest-btn,
-        #btn-pvp,
+        #auth-back-btn,
         #auth-message {
-            grid-column: 1 / -1;
             width: 100%;
             max-width: 320px;
+        }
+
+        #auth-action-view,
+        #auth-form-view {
+            display: grid;
+            gap: 0.5rem;
         }
 
         #auth-name,
@@ -214,8 +220,9 @@
         }
 
         #auth-submit-btn,
-        #guest-btn,
-        #btn-pvp {
+        #auth-back-btn,
+        #auth-login-btn,
+        #auth-register-btn {
             border: none;
             border-radius: 10px;
             padding: 0.6rem 1.2rem;
@@ -236,9 +243,7 @@
         }
 
         #selection-section,
-        #game-lobby,
-        #config-pvp,
-        .story-floating-link {
+        #game-lobby {
             display: none;
         }
 
@@ -295,45 +300,66 @@
 
             <main class="game-container">
                 <div id="start-screen">
-                    <h1>Juego del Gato Pro</h1>
-                    <a class="story-link-btn" href="historia.html" aria-label="Abrir historia y estrategias">
-                        Historia e estrategias
-                    </a>
+                    <h1 id="main-title" class="shiny-title">Juego del Gato</h1>
+                    <h1 id="modes-title" class="shiny-title title-hidden" aria-hidden="true">Modos de Juego</h1>
 
                     <section id="auth-section">
-                        <input id="auth-name" type="text" placeholder="Nombre">
-                        <input id="auth-pin" type="password" placeholder="PIN">
-                        <button id="auth-submit-btn" type="button">Iniciar Sesion / Registrarse</button>
-                        <button id="guest-btn" type="button">Continuar como Invitado</button>
-                        <button id="btn-pvp" type="button">Duelo 1 vs 1</button>
+                        <div id="auth-action-view" class="auth-view auth-view-visible">
+                            <button id="auth-login-btn" type="button">Iniciar Sesion</button>
+                            <button id="auth-register-btn" type="button">Crear Cuenta</button>
+                        </div>
 
-                        <div id="config-pvp" style="display: none;" aria-label="Configuracion de duelo local">
-                            <input id="pvp-player1" type="text" placeholder="Nombre Jugador 1">
-                            <input id="pvp-player2" type="text" placeholder="Nombre Jugador 2">
-                            <button id="pvp-start-btn" type="button">!Comenzar Duelo!</button>
-                            <button id="pvp-back-btn" type="button">← Volver al inicio</button>
+                        <div id="auth-form-view" class="auth-view">
+                            <input id="auth-name" type="text" placeholder="Nombre">
+                            <input id="auth-pin" type="password" placeholder="PIN">
+                            <button id="auth-submit-btn" type="button">Confirmar</button>
+                            <button id="auth-back-btn" type="button">Volver</button>
                         </div>
 
                         <p id="auth-message" class="helper-text"></p>
                     </section>
 
                     <section id="selection-section" style="display: none;">
-                        <button id="logout-btn" class="link-btn" type="button">Cerrar Sesion</button>
-                        <p id="welcome-message" class="welcome-text">Hola, Invitado</p>
-                        <select id="difficulty-selector">
-                            <option value="principiante">Principiante</option>
-                            <option value="intermedio">Intermedio</option>
-                            <option value="avanzado">Avanzado</option>
-                            <option value="imposible">Imposible</option>
-                        </select>
-                        <button id="start-game-btn" type="button">!Empezar Juego!</button>
+                        <p id="welcome-message" class="welcome-text">Hola</p>
+
+                        <div id="modes-menu-panel" class="mode-panel mode-panel-visible">
+                            <button id="btn-pvp" type="button">Duelo 1vs1</button>
+                            <button id="btn-ai-mode" type="button">Jugar vs la IA</button>
+                            <button id="btn-online-mode" type="button" disabled>Sala Online</button>
+                            <p id="online-soon-note" class="menu-note">*Próximamente...</p>
+                            <a id="menu-story-link" class="story-link-btn" href="historia.html?return=modos"
+                                aria-label="Abrir historia y estrategias">
+                                Historia y estrategias
+                            </a>
+                            <button id="logout-btn" class="link-btn" type="button">Cerrar Sesion</button>
+                        </div>
+
+                        <div id="mode-ai-panel" class="mode-panel" aria-label="Seleccion de dificultad IA">
+                            <select id="difficulty-selector">
+                                <option value="facil">Facil</option>
+                                <option value="medio">Medio</option>
+                                <option value="dificil">Dificil</option>
+                                <option value="imposible">Imposible</option>
+                            </select>
+                            <button id="start-game-btn" type="button">Empezar vs IA</button>
+                            <button id="mode-ai-back-btn" type="button">Volver</button>
+                        </div>
+
+                        <div id="mode-pvp-panel" class="mode-panel" aria-label="Configuracion de duelo local">
+                            <input id="pvp-player1" type="text" placeholder="Nombre Jugador 1">
+                            <input id="pvp-player2" type="text" placeholder="Nombre Jugador 2">
+                            <button id="pvp-start-btn" type="button">Comenzar Duelo</button>
+                            <button id="mode-pvp-back-btn" type="button">Volver</button>
+                        </div>
+
+                        <p id="mode-message" class="helper-text"></p>
                     </section>
                 </div>
 
                 <div id="game-lobby" style="display: none;">
                     <section id="profile-panel" aria-label="Perfil del jugador">
                         <h2>Perfil</h2>
-                        <p id="profile-name">Jugador: Invitado</p>
+                        <p id="profile-name">Jugador</p>
                         <p id="profile-wins">Victorias: 0</p>
                         <p id="profile-losses">Derrotas: 0</p>
                         <p id="profile-draws">Empates: 0</p>
@@ -361,8 +387,6 @@
     </div>
 
     <a href="privacidad.html" class="privacy-link">Política de Privacidad</a>
-    <a id="floating-story-link" href="historia.html" class="story-floating-link"
-        aria-label="Abrir historia y estrategias">Historia e estrategias</a>
 
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script defer src="script.js?v=20260415"></script>
