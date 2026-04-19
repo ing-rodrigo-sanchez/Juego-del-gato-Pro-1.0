@@ -187,61 +187,6 @@ async function loadAccounts() {
     }, {});
 }
 
-async function cargarRankingInicio() {
-    const rankingContainer = document.getElementById('ranking-inicio');
-    if (!rankingContainer) {
-        return;
-    }
-
-    rankingContainer.innerHTML = '<p class="ranking-empty">Cargando ranking...</p>';
-
-    if (!supabaseDb) {
-        rankingContainer.innerHTML = '<p class="ranking-error">No se pudo cargar el ranking.</p>';
-        return;
-    }
-
-    const { data, error } = await supabaseDb
-        .from('perfiles')
-        .select('nombre, victorias')
-        .order('victorias', { ascending: false })
-        .limit(10);
-
-    if (error) {
-        console.error('Error al cargar el ranking de inicio:', error);
-        rankingContainer.innerHTML = '<p class="ranking-error">No se pudo cargar el ranking.</p>';
-        return;
-    }
-
-    const ranking = Array.isArray(data) ? data : [];
-    if (ranking.length === 0) {
-        rankingContainer.innerHTML = '<p class="ranking-empty">Aun no hay jugadores en el ranking.</p>';
-        return;
-    }
-
-    const title = document.createElement('h2');
-    title.textContent = 'Top 10 Ranking';
-
-    const list = document.createElement('ul');
-    ranking.forEach((profile) => {
-        const item = document.createElement('li');
-        const nombre = profile?.nombre?.trim() || 'Jugador';
-        const victorias = Number.isFinite(profile?.victorias) ? profile.victorias : Number(profile?.victorias) || 0;
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'ranking-name';
-        nameSpan.textContent = nombre;
-
-        const winsSpan = document.createElement('span');
-        winsSpan.className = 'ranking-wins';
-        winsSpan.textContent = `${victorias} Victorias`;
-
-        item.append(nameSpan, winsSpan);
-        list.appendChild(item);
-    });
-
-    rankingContainer.replaceChildren(title, list);
-}
-
 async function saveAccounts(accounts) {
     if (!supabaseDb) {
         console.error('Supabase no esta disponible: cliente no inicializado.');
@@ -363,6 +308,11 @@ async function loginUser(name, pin) {
         currentAccountName = user.nombre;
         localStorage.setItem(SESSION_ACCOUNT_KEY, currentAccountName);
         window.currentAuthenticatedUser = user;
+
+        if (typeof cargarRankingInicio === 'function') {
+            cargarRankingInicio();
+        }
+
         return { ok: true, user };
     } catch (unexpectedLoginError) {
         console.error('Fallo inesperado durante login en Supabase:', unexpectedLoginError);
@@ -465,6 +415,10 @@ function updateAccountStats(result) {
         currentAccountName = data.nombre;
         window.currentAuthenticatedUser = data;
         renderProfile();
+
+        if (result === 'win' && typeof cargarRankingInicio === 'function') {
+            cargarRankingInicio();
+        }
     })().catch((statsError) => {
         console.error('Fallo inesperado al guardar estadisticas en Supabase:', statsError);
     })();
@@ -1309,9 +1263,6 @@ showScreen('start');
 showStartSection('auth');
 
 window.onload = async () => {
-    await Promise.all([
-        restoreSessionFromStorage(),
-        cargarRankingInicio()
-    ]);
+    await restoreSessionFromStorage();
     applyEntryRouteFromQuery();
 };
