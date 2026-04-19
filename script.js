@@ -10,11 +10,12 @@ if (hasPlaceholderCredentials) {
     console.error('Las credenciales de Supabase parecen de ejemplo. Revisa SUPABASE_URL y SUPABASE_KEY.');
 }
 
-let supabaseClient = null;
+let supabaseDb = null;
 if (window.supabase && typeof window.supabase.createClient === 'function') {
     try {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        window.supabaseClient = supabaseClient;
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        supabaseDb = supabase;
+        window.supabaseClient = supabase;
         console.log('Supabase configurado correctamente');
     } catch (connectionError) {
         console.error('Error al crear el cliente de Supabase:', connectionError);
@@ -152,22 +153,48 @@ backToStartButton.style.color = '#cbd5e1';
 backToStartButton.style.cursor = 'pointer';
 resetButton.insertAdjacentElement('afterend', backToStartButton);
 
-function loadAccounts() {
-    const rawData = localStorage.getItem(STORAGE_KEY);
-    if (!rawData) {
+async function loadAccounts() {
+    if (!supabaseDb) {
+        console.error('Supabase no esta disponible: cliente no inicializado.');
         return {};
     }
 
-    try {
-        const parsed = JSON.parse(rawData);
-        return typeof parsed === 'object' && parsed !== null ? parsed : {};
-    } catch {
+    const { data, error } = await supabaseDb
+        .from('perfiles')
+        .select('nombre, pin, victorias, derrotas, empates');
+
+    if (error) {
+        console.error('Error al cargar cuentas desde Supabase:', error);
         return {};
     }
+
+    return (data || []).reduce((accounts, profile) => {
+        accounts[profile.nombre] = profile;
+        return accounts;
+    }, {});
 }
 
-function saveAccounts(accounts) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+async function saveAccounts(accounts) {
+    if (!supabaseDb) {
+        console.error('Supabase no esta disponible: cliente no inicializado.');
+        return { ok: false, message: 'Supabase no esta disponible.' };
+    }
+
+    const rows = Object.values(accounts || {});
+    if (rows.length === 0) {
+        return { ok: true };
+    }
+
+    const { error } = await supabaseDb
+        .from('perfiles')
+        .upsert(rows, { onConflict: 'nombre' });
+
+    if (error) {
+        console.error('Error al guardar cuentas en Supabase:', error);
+        return { ok: false, message: 'No se pudo guardar en Supabase.' };
+    }
+
+    return { ok: true };
 }
 
 function loadGuestStats() {
@@ -196,41 +223,86 @@ function saveGuestStats(stats) {
     localStorage.setItem(GUEST_STATS_KEY, JSON.stringify(stats));
 }
 
-function registerUser(name, pin) {
+async function registerUser(name, pin) {
     const normalizedName = name.trim();
     if (!normalizedName || !pin.trim()) {
         return { ok: false, message: 'Escribe nombre y PIN.' };
     }
 
-    const accounts = loadAccounts();
-    if (accounts[normalizedName]) {
+    if (!supabaseDb) {
+        console.error('Supabase no esta disponible: cliente no inicializado.');
+        return { ok: false, message: 'Supabase no esta disponible.' };
+    }
+
+    const { data: existingProfile, error: existingError } = await supabaseDb
+        .from('perfiles')
+        .select('nombre, pin, victorias, derrotas, empates')
+        .eq('nombre', normalizedName)
+        .maybeSingle();
+
+    if (existingError) {
+        console.error('Error verificando usuario en Supabase:', existingError);
+        return { ok: false, message: 'No se pudo verificar el usuario.' };
+    }
+
+    if (existingProfile) {
         return { ok: false, message: 'Ese nombre ya existe.' };
     }
 
-    accounts[normalizedName] = {
-        nombre: normalizedName,
-        pin,
-        victorias: 0,
-        derrotas: 0,
-        empates: 0
-    };
-    saveAccounts(accounts);
+    console.log('Intentando insertar en Supabase...');
+    const { data: insertedProfile, error } = await supabaseDb
+        .from('perfiles')
+        .insert([
+            {
+                nombre: normalizedName,
+                pin,
+                victorias: 0,
+                derrotas: 0,
+                empates: 0
+            }
+        ])
+        .select('nombre, pin, victorias, derrotas, empates')
+        .single();
 
-    return { ok: true, message: 'Cuenta creada. Ya puedes iniciar sesion.' };
+    if (error || !insertedProfile) {
+        console.error('Detalle del error:', error);
+        return { ok: false, message: 'No se pudo crear el perfil.' };
+    }
+
+    currentAuthenticatedUser = insertedProfile;
+    window.currentAuthenticatedUser = insertedProfile;
+
+    return { ok: true, message: 'Cuenta creada. Ya puedes iniciar sesion.', user: insertedProfile };
 }
 
-function loginUser(name, pin) {
+async function loginUser(name, pin) {
     const normalizedName = name.trim();
     if (!normalizedName || !pin.trim()) {
         return { ok: false, message: 'Escribe nombre y PIN.' };
     }
 
-    const accounts = loadAccounts();
-    const user = accounts[normalizedName];
+    if (!supabaseDb) {
+        console.error('Supabase no esta disponible: cliente no inicializado.');
+        return { ok: false, message: 'Supabase no esta disponible.' };
+    }
+
+    const { data: user, error } = await supabaseDb
+        .from('perfiles')
+        .select('nombre, pin, victorias, derrotas, empates')
+        .eq('nombre', normalizedName)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error al iniciar sesion en Supabase:', error);
+        return { ok: false, message: 'No se pudo iniciar sesion.' };
+    }
+
     if (!user || user.pin !== pin) {
         return { ok: false, message: 'Nombre o PIN incorrecto.' };
     }
 
+    currentAuthenticatedUser = user;
+    window.currentAuthenticatedUser = user;
     return { ok: true, user };
 }
 
@@ -251,23 +323,48 @@ function updateAccountStats(result) {
         return;
     }
 
-    const accounts = loadAccounts();
-    const user = accounts[currentAccountName];
-    if (!user) {
-        return;
-    }
+    void (async () => {
+        if (!supabaseDb) {
+            console.error('Supabase no esta disponible: cliente no inicializado.');
+            return;
+        }
 
-    if (result === 'win') {
-        user.victorias += 1;
-    } else if (result === 'loss') {
-        user.derrotas += 1;
-    } else {
-        user.empates += 1;
-    }
+        const user = currentAuthenticatedUser;
+        if (!user || user.nombre !== currentAccountName) {
+            return;
+        }
 
-    accounts[currentAccountName] = user;
-    saveAccounts(accounts);
-    renderProfile();
+        const updatedStats = {
+            victorias: Number.isFinite(user.victorias) ? user.victorias : 0,
+            derrotas: Number.isFinite(user.derrotas) ? user.derrotas : 0,
+            empates: Number.isFinite(user.empates) ? user.empates : 0
+        };
+
+        if (result === 'win') {
+            updatedStats.victorias += 1;
+        } else if (result === 'loss') {
+            updatedStats.derrotas += 1;
+        } else {
+            updatedStats.empates += 1;
+        }
+
+        const { data, error } = await supabaseDb
+            .from('perfiles')
+            .update(updatedStats)
+            .eq('nombre', user.nombre)
+            .eq('pin', user.pin)
+            .select('nombre, pin, victorias, derrotas, empates')
+            .single();
+
+        if (error || !data) {
+            console.error('Error actualizando estadisticas en Supabase:', error);
+            return;
+        }
+
+        currentAuthenticatedUser = data;
+        window.currentAuthenticatedUser = data;
+        renderProfile();
+    })();
 }
 
 function renderProfile() {
@@ -296,11 +393,9 @@ function renderProfile() {
         return;
     }
 
-    const accounts = loadAccounts();
-    const localUser = accounts[currentAccountName];
     const user = currentAuthenticatedUser && currentAuthenticatedUser.nombre === currentAccountName
         ? currentAuthenticatedUser
-        : localUser;
+        : null;
 
     if (!user) {
         profileName.textContent = 'Jugador: Invitado';
@@ -931,12 +1026,12 @@ function completeAuthAsUser(name, guestMode) {
 }
 
 async function authenticateWithSupabase(name, pin) {
-    if (!supabaseClient) {
+    if (!supabaseDb) {
         console.error('Supabase no esta disponible: cliente no inicializado.');
         return { ok: false, message: 'Supabase no esta disponible.' };
     }
 
-    const { data: existingProfile, error: fetchError } = await supabaseClient
+    const { data: existingProfile, error: fetchError } = await supabaseDb
         .from('perfiles')
         .select('nombre, pin, victorias, derrotas, empates')
         .eq('nombre', name)
@@ -953,34 +1048,10 @@ async function authenticateWithSupabase(name, pin) {
             return { ok: false };
         }
 
-        currentAuthenticatedUser = existingProfile;
-        window.currentAuthenticatedUser = existingProfile;
-        return { ok: true, user: existingProfile };
+        return loginUser(name, pin);
     }
 
-    console.log('Intentando insertar en Supabase...');
-    const { data: insertedProfile, error } = await supabaseClient
-        .from('perfiles')
-        .insert([
-            {
-                nombre: name,
-                pin,
-                victorias: 0,
-                derrotas: 0,
-                empates: 0
-            }
-        ])
-        .select('nombre, pin, victorias, derrotas, empates')
-        .single();
-
-    if (error || !insertedProfile) {
-        console.error('Detalle del error:', error);
-        return { ok: false, message: 'No se pudo crear el perfil.' };
-    }
-
-    currentAuthenticatedUser = insertedProfile;
-    window.currentAuthenticatedUser = insertedProfile;
-    return { ok: true, user: insertedProfile };
+    return registerUser(name, pin);
 }
 
 authSubmitButton.addEventListener('click', async () => {
