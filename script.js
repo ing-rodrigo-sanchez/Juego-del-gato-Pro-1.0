@@ -166,6 +166,51 @@ backToStartButton.style.color = '#cbd5e1';
 backToStartButton.style.cursor = 'pointer';
 resetButton.insertAdjacentElement('afterend', backToStartButton);
 
+async function cargarRankingInicio() {
+    const rankingContainer =
+        document.getElementById('ranking-inicio') ||
+        document.getElementById('ranking-lista') ||
+        document.querySelector('[data-ranking-inicio]');
+
+    if (!rankingContainer) {
+        return;
+    }
+
+    rankingContainer.innerHTML = '';
+
+    if (!supabaseDb) {
+        rankingContainer.textContent = 'Ranking no disponible.';
+        return;
+    }
+
+    const { data, error } = await supabaseDb
+        .from('perfiles')
+        .select('nombre, victorias')
+        .order('victorias', { ascending: false })
+        .limit(10);
+
+    if (error) {
+        console.error('No se pudo cargar el ranking:', error);
+        rankingContainer.textContent = 'No se pudo cargar el ranking.';
+        return;
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+        rankingContainer.textContent = 'Aun no hay partidas registradas.';
+        return;
+    }
+
+    const rankingList = document.createElement('ol');
+    data.forEach((profile) => {
+        const item = document.createElement('li');
+        const wins = Number.isFinite(profile.victorias) ? profile.victorias : 0;
+        item.textContent = `${profile.nombre}: ${wins} victorias`;
+        rankingList.appendChild(item);
+    });
+
+    rankingContainer.appendChild(rankingList);
+}
+
 async function loadAccounts() {
     if (!supabaseDb) {
         console.error('Supabase no esta disponible: cliente no inicializado.');
@@ -309,9 +354,7 @@ async function loginUser(name, pin) {
         localStorage.setItem(SESSION_ACCOUNT_KEY, currentAccountName);
         window.currentAuthenticatedUser = user;
 
-        if (typeof cargarRankingInicio === 'function') {
-            cargarRankingInicio();
-        }
+        await cargarRankingInicio();
 
         return { ok: true, user };
     } catch (unexpectedLoginError) {
@@ -356,49 +399,49 @@ async function restoreSessionFromStorage() {
     return true;
 }
 
-function updateAccountStats(result) {
-    void (async () => {
-        if (!supabaseDb) {
-            console.error('No se pudieron guardar estadisticas: cliente de Supabase no inicializado.');
+async function updateAccountStats(result) {
+    if (!supabaseDb) {
+        console.error('No se pudieron guardar estadisticas: cliente de Supabase no inicializado.');
+        return;
+    }
+
+    const sessionName = currentAccountName?.trim();
+    if (!sessionName) {
+        console.error('No se pudieron guardar estadisticas: currentAccountName no esta definido en sesion.');
+        return;
+    }
+
+    let user = currentAuthenticatedUser;
+    if (!user || user.nombre !== sessionName) {
+        const { data: sessionUser, error: sessionFetchError } = await supabaseDb
+            .from('perfiles')
+            .select('nombre, pin, victorias, derrotas, empates')
+            .eq('nombre', sessionName)
+            .maybeSingle();
+
+        if (sessionFetchError || !sessionUser) {
+            console.error(`No se pudieron cargar estadisticas base para ${sessionName}:`, sessionFetchError);
             return;
         }
 
-        const sessionName = currentAccountName?.trim();
-        if (!sessionName) {
-            console.error('No se pudieron guardar estadisticas: currentAccountName no esta definido en sesion.');
-            return;
-        }
+        user = sessionUser;
+    }
 
-        let user = currentAuthenticatedUser;
-        if (!user || user.nombre !== sessionName) {
-            const { data: sessionUser, error: sessionFetchError } = await supabaseDb
-                .from('perfiles')
-                .select('nombre, pin, victorias, derrotas, empates')
-                .eq('nombre', sessionName)
-                .maybeSingle();
+    const updatedStats = {
+        victorias: Number.isFinite(user.victorias) ? user.victorias : 0,
+        derrotas: Number.isFinite(user.derrotas) ? user.derrotas : 0,
+        empates: Number.isFinite(user.empates) ? user.empates : 0
+    };
 
-            if (sessionFetchError || !sessionUser) {
-                console.error(`No se pudieron cargar estadisticas base para ${sessionName}:`, sessionFetchError);
-                return;
-            }
+    if (result === 'win') {
+        updatedStats.victorias += 1;
+    } else if (result === 'loss') {
+        updatedStats.derrotas += 1;
+    } else {
+        updatedStats.empates += 1;
+    }
 
-            user = sessionUser;
-        }
-
-        const updatedStats = {
-            victorias: Number.isFinite(user.victorias) ? user.victorias : 0,
-            derrotas: Number.isFinite(user.derrotas) ? user.derrotas : 0,
-            empates: Number.isFinite(user.empates) ? user.empates : 0
-        };
-
-        if (result === 'win') {
-            updatedStats.victorias += 1;
-        } else if (result === 'loss') {
-            updatedStats.derrotas += 1;
-        } else {
-            updatedStats.empates += 1;
-        }
-
+    try {
         const { data, error } = await supabaseDb
             .from('perfiles')
             .update(updatedStats)
@@ -411,17 +454,18 @@ function updateAccountStats(result) {
             return;
         }
 
+        if (result === 'win') {
+            await cargarRankingInicio();
+            console.log('Ranking refrescado con éxito');
+        }
+
         currentAuthenticatedUser = data;
         currentAccountName = data.nombre;
         window.currentAuthenticatedUser = data;
         renderProfile();
-
-        if (result === 'win' && typeof cargarRankingInicio === 'function') {
-            cargarRankingInicio();
-        }
-    })().catch((statsError) => {
+    } catch (statsError) {
         console.error('Fallo inesperado al guardar estadisticas en Supabase:', statsError);
-    })();
+    }
 }
 
 function renderProfile() {
@@ -971,7 +1015,7 @@ function finalizeMatch(winnerSymbol) {
             pvpStats.draws += 1;
             renderProfile();
         } else {
-            updateAccountStats('draw');
+            void updateAccountStats('draw');
         }
     } else {
         updateStatus(`${getWinnerLabel(winnerSymbol)} ha ganado!`);
@@ -991,12 +1035,12 @@ function finalizeMatch(winnerSymbol) {
 
         if (winnerSymbol === PLAYER_SYMBOL) {
             showGameResult('victory', '¡Has ganado!');
-            updateAccountStats('win');
+            void updateAccountStats('win');
         } else {
             if (gameMode === 'ai') {
                 showGameResult('defeat', 'IA ha ganado');
             }
-            updateAccountStats('loss');
+            void updateAccountStats('loss');
         }
     }
 
