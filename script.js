@@ -77,6 +77,7 @@ let gameMode = 'ai';
 let isPvP = false;
 let isGuestSession = true;
 let currentAccountName = 'Invitado';
+let currentAuthenticatedUser = null;
 let currentStartSection = 'auth';
 let pvpPlayerOneName = 'Jugador 1';
 let pvpPlayerTwoName = 'Jugador 2';
@@ -282,7 +283,11 @@ function renderProfile() {
     }
 
     const accounts = loadAccounts();
-    const user = accounts[currentAccountName];
+    const localUser = accounts[currentAccountName];
+    const user = currentAuthenticatedUser && currentAuthenticatedUser.nombre === currentAccountName
+        ? currentAuthenticatedUser
+        : localUser;
+
     if (!user) {
         profileName.textContent = 'Jugador: Invitado';
         const guestStats = loadGuestStats();
@@ -293,9 +298,9 @@ function renderProfile() {
     }
 
     profileName.textContent = `Jugador: ${user.nombre}`;
-    profileWins.textContent = `Victorias: ${user.victorias}`;
-    profileLosses.textContent = `Derrotas: ${user.derrotas}`;
-    profileDraws.textContent = `Empates: ${user.empates}`;
+    profileWins.textContent = `Victorias: ${Number.isFinite(user.victorias) ? user.victorias : 0}`;
+    profileLosses.textContent = `Derrotas: ${Number.isFinite(user.derrotas) ? user.derrotas : 0}`;
+    profileDraws.textContent = `Empates: ${Number.isFinite(user.empates) ? user.empates : 0}`;
 }
 
 function setAuthMessage(message) {
@@ -878,6 +883,8 @@ function logoutSession() {
     isPvP = false;
     currentAccountName = 'Invitado';
     isGuestSession = true;
+    currentAuthenticatedUser = null;
+    window.currentAuthenticatedUser = null;
     resetPvpState();
     showDefaultAuthActions();
 
@@ -897,6 +904,10 @@ function completeAuthAsUser(name, guestMode) {
     isPvP = false;
     currentAccountName = name;
     isGuestSession = guestMode;
+    if (guestMode) {
+        currentAuthenticatedUser = null;
+        window.currentAuthenticatedUser = null;
+    }
     showDefaultAuthActions();
     renderProfile();
     setAuthMessage('');
@@ -905,7 +916,55 @@ function completeAuthAsUser(name, guestMode) {
     showStartSection('selection');
 }
 
-authSubmitButton.addEventListener('click', () => {
+async function authenticateWithSupabase(name, pin) {
+    if (!supabaseClient) {
+        return { ok: false, message: 'Supabase no esta disponible.' };
+    }
+
+    const { data: existingProfile, error: fetchError } = await supabaseClient
+        .from('perfiles')
+        .select('nombre, pin, victorias, derrotas')
+        .eq('nombre', name)
+        .maybeSingle();
+
+    if (fetchError) {
+        return { ok: false, message: 'No se pudo verificar el perfil.' };
+    }
+
+    if (existingProfile) {
+        if (existingProfile.pin !== pin) {
+            alert('PIN incorrecto');
+            return { ok: false };
+        }
+
+        currentAuthenticatedUser = existingProfile;
+        window.currentAuthenticatedUser = existingProfile;
+        return { ok: true, user: existingProfile };
+    }
+
+    const { data: insertedProfile, error: insertError } = await supabaseClient
+        .from('perfiles')
+        .insert([
+            {
+                nombre: name,
+                pin,
+                victorias: 0,
+                derrotas: 0
+            }
+        ])
+        .select('nombre, pin, victorias, derrotas')
+        .single();
+
+    if (insertError || !insertedProfile) {
+        return { ok: false, message: 'No se pudo crear el perfil.' };
+    }
+
+    currentAuthenticatedUser = insertedProfile;
+    window.currentAuthenticatedUser = insertedProfile;
+    return { ok: true, user: insertedProfile };
+}
+
+authSubmitButton.addEventListener('click', async () => {
     const name = authNameInput.value.trim();
     const pin = authPinInput.value.trim();
 
@@ -914,25 +973,18 @@ authSubmitButton.addEventListener('click', () => {
         return;
     }
 
-    const accounts = loadAccounts();
-    if (accounts[name]) {
-        const loginResult = loginUser(name, pin);
-        if (!loginResult.ok) {
-            setAuthMessage(loginResult.message);
-            return;
+    authSubmitButton.disabled = true;
+    const authResult = await authenticateWithSupabase(name, pin);
+    authSubmitButton.disabled = false;
+
+    if (!authResult.ok) {
+        if (authResult.message) {
+            setAuthMessage(authResult.message);
         }
-
-        completeAuthAsUser(loginResult.user.nombre, false);
         return;
     }
 
-    const registerResult = registerUser(name, pin);
-    if (!registerResult.ok) {
-        setAuthMessage(registerResult.message);
-        return;
-    }
-
-    completeAuthAsUser(name, false);
+    completeAuthAsUser(authResult.user.nombre, false);
 });
 
 guestButton.addEventListener('click', () => {
